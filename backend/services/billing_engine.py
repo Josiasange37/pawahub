@@ -86,7 +86,7 @@ async def complete_payment(cycle_id: str, deposit_id: str, interval_days: int = 
         sub["phone"], sub.get("name", "Customer"),
         sme["business_name"], c["amount"],
         plan.get("name", "Subscription"),
-        sme["email"],
+        sme["email"], sub.get("email", ""),
     )
 
 
@@ -116,6 +116,7 @@ async def fail_payment(cycle_id: str, deposit_id: str, pawapay_status: str = "FA
         sme["business_name"], c["amount"],
         plan.get("name", "Subscription"),
         sme["email"], pawapay_status,
+        sub.get("email", ""),
     )
 
 

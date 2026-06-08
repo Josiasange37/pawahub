@@ -28,12 +28,15 @@ async def notify_payment_success(
     amount: int,
     plan_name: str,
     owner_email: str,
+    subscriber_email: str = "",
 ):
     w_msg = payment_receipt_msg(business_name, amount, plan_name)
     await send_whatsapp(subscriber_phone, w_msg)
 
     email_html = payment_receipt_email(business_name, subscriber_name, amount, plan_name)
     await send_email(owner_email, f"Payment Received – {subscriber_name}", email_html)
+    if subscriber_email:
+        await send_email(subscriber_email, f"Receipt – {plan_name} from {business_name}", email_html)
 
 
 async def notify_payment_failed(
@@ -44,9 +47,12 @@ async def notify_payment_failed(
     plan_name: str,
     owner_email: str,
     reason: str = "Insufficient balance",
+    subscriber_email: str = "",
 ):
     w_msg = payment_failed_msg(business_name, amount, plan_name)
     await send_whatsapp(subscriber_phone, w_msg)
 
     email_html = payment_failed_email(business_name, subscriber_name, amount, plan_name, reason)
     await send_email(owner_email, f"Payment Failed – {subscriber_name}", email_html)
+    if subscriber_email:
+        await send_email(subscriber_email, f"Payment Failed – {plan_name}", email_html)

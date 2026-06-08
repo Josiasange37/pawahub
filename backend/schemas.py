@@ -61,6 +61,7 @@ class SubscriberCreate(BaseModel):
     plan_id: UUID
     name: str
     phone: str
+    email: str = ""
 
 
 class SubscriberOut(BaseModel):
@@ -69,6 +70,7 @@ class SubscriberOut(BaseModel):
     plan_id: UUID
     name: str
     phone: str
+    email: str
     is_active: bool
     created_at: datetime
 

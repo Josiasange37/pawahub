@@ -5,6 +5,7 @@ interface Subscriber {
   id: string;
   name: string;
   phone: string;
+  email: string;
   plan_id: string;
   is_active: boolean;
   created_at: string;
@@ -21,7 +22,7 @@ export default function Subscribers() {
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ plan_id: "", name: "", phone: "" });
+  const [form, setForm] = useState({ plan_id: "", name: "", phone: "", email: "" });
 
   const load = () => {
     const token = getToken();
@@ -35,7 +36,7 @@ export default function Subscribers() {
   const addSub = async (e: React.FormEvent) => {
     e.preventDefault();
     await api("/api/subscribers", { method: "POST", token: getToken()!, body: form });
-    setForm({ plan_id: "", name: "", phone: "" });
+    setForm({ plan_id: "", name: "", phone: "", email: "" });
     setShowForm(false);
     load();
   };
@@ -72,9 +73,10 @@ export default function Subscribers() {
 
       {showForm && (
         <form onSubmit={addSub} className="bg-white p-6 rounded-xl border border-gray-200 mb-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-2 border rounded-lg" required />
             <input placeholder="Phone (237xxxxxxxxx)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-4 py-2 border rounded-lg" required />
+            <input type="email" placeholder="Email (for receipt)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-2 border rounded-lg" />
             <select value={form.plan_id} onChange={(e) => setForm({ ...form, plan_id: e.target.value })} className="px-4 py-2 border rounded-lg" required>
               <option value="">Select Plan</option>
               {plans.filter(p => p.is_active !== false).map((p) => (
@@ -94,6 +96,7 @@ export default function Subscribers() {
             <div>
               <p className="font-medium">{sub.name}</p>
               <p className="text-sm text-gray-500">{sub.phone}</p>
+              {sub.email && <p className="text-xs text-gray-400">{sub.email}</p>}
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-xs px-2 py-1 rounded-full ${sub.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>

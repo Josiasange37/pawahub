@@ -21,6 +21,7 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         "plan_id": str(body.plan_id),
         "name": body.name,
         "phone": body.phone,
+        "email": body.email,
     }).execute()
 
     subscriber = sub.data[0]
