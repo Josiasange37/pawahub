@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "pawasub-jwt-secret-hackathon-2026"
     pawapay_base_url: str = "https://api.sandbox.pawapay.io"
     baileys_bot_url: str = "http://localhost:3001"
+    gmail_address: str = ""
+    gmail_app_password: str = ""
 
     class Config:
         env_file = ".env"

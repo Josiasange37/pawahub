@@ -29,7 +29,11 @@ async def initiate_payment(cycle_id: str):
         return {"error": "cycle not found"}
 
     deposit_ref = str(uuid.uuid4())
-    result = await initiate_deposit(c["amount"], sub["phone"], deposit_ref)
+    try:
+        result = await initiate_deposit(c["amount"], sub["phone"], deposit_ref)
+    except Exception as e:
+        print(f"⚠️  pawaPay API error (demo mode): {e}", flush=True)
+        result = {"success": False, "error": str(e), "provider": "MTN_MOMO_CMR"}
 
     tx = db.table("transactions").insert({
         "sme_id": sub["sme_id"],

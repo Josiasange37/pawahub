@@ -33,10 +33,12 @@ async def notify_payment_success(
     w_msg = payment_receipt_msg(business_name, amount, plan_name)
     await send_whatsapp(subscriber_phone, w_msg)
 
-    email_html = payment_receipt_email(business_name, subscriber_name, amount, plan_name)
-    await send_email(owner_email, f"Payment Received – {subscriber_name}", email_html)
-    if subscriber_email:
-        await send_email(subscriber_email, f"Receipt – {plan_name} from {business_name}", email_html)
+    receipt_html = payment_receipt_email(business_name, subscriber_name, amount, plan_name)
+    await send_email(owner_email, f"Payment Received – {subscriber_name}", receipt_html)
+
+    sub_label = subscriber_email or f"{subscriber_name} ({subscriber_phone})"
+    sub_subject = f"Receipt – {plan_name}" if subscriber_email else f"Receipt – {subscriber_name} / {subscriber_phone}"
+    await send_email(sub_label, sub_subject, receipt_html, tag="subscriber")
 
 
 async def notify_payment_failed(
@@ -52,7 +54,9 @@ async def notify_payment_failed(
     w_msg = payment_failed_msg(business_name, amount, plan_name)
     await send_whatsapp(subscriber_phone, w_msg)
 
-    email_html = payment_failed_email(business_name, subscriber_name, amount, plan_name, reason)
-    await send_email(owner_email, f"Payment Failed – {subscriber_name}", email_html)
-    if subscriber_email:
-        await send_email(subscriber_email, f"Payment Failed – {plan_name}", email_html)
+    failed_html = payment_failed_email(business_name, subscriber_name, amount, plan_name, reason)
+    await send_email(owner_email, f"Payment Failed – {subscriber_name}", failed_html)
+
+    sub_label = subscriber_email or f"{subscriber_name} ({subscriber_phone})"
+    sub_subject = f"Payment Failed – {plan_name}" if subscriber_email else f"Payment Failed – {subscriber_name} / {subscriber_phone}"
+    await send_email(sub_label, sub_subject, failed_html, tag="subscriber")
