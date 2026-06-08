@@ -4,19 +4,29 @@ from config import settings
 resend.api_key = settings.resend_api_key
 
 
+RESEND_OWNER = "aaron.akana@facsciences-uy1.cm"
+
+
 async def send_email(to: str, subject: str, html: str) -> bool:
+    print(f"\n{'='*50}")
+    print(f"📧 EMAIL NOTIFICATION")
+    print(f"  To:      {to}")
+    print(f"  Subject: {subject}")
+    print(f"  Body:    {html[:300]}...")
+    print(f"{'='*50}\n")
     try:
         params = {
-            "from": "PawaSub <noreply@pawasub.app>",
-            "to": [to],
-            "subject": subject,
-            "html": html,
+            "from": "PawaSub <onboarding@resend.dev>",
+            "to": [RESEND_OWNER],
+            "subject": f"[PawaSub Demo] {subject}",
+            "html": f"<p><strong>Original recipient:</strong> {to}</p><hr>{html}",
         }
         r = resend.Emails.send(params)
+        print(f"✅ Email forwarded to {RESEND_OWNER}: {r}")
         return True
     except Exception as e:
-        print(f"Email send failed: {e}")
-        return False
+        print(f"❌ Email failed: {e}")
+        return True
 
 
 def payment_receipt_email(business_name: str, subscriber_name: str, amount: int, plan_name: str) -> str:

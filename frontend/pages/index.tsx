@@ -13,17 +13,21 @@ interface Stats {
 
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    api("/api/dashboard/stats", { token }).then(setStats).catch(() => {});
+    api("/api/dashboard/stats", { token }).then(setStats).catch((e) => {
+      console.error("Dashboard stats error:", e);
+      setError(e.message);
+    });
   }, []);
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  if (!stats) return <p>Loading...</p>;
+  if (error) return <p className="text-center text-red-500 mt-12">{error}</p>;
+  if (!stats) return <p className="text-center text-gray-500 mt-12">Loading...</p>;
 
   const runBilling = async () => {
     setLoading(true);

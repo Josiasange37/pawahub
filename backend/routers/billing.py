@@ -44,21 +44,22 @@ async def trigger_billing(background_tasks: BackgroundTasks, sme: dict = Depends
 
 @router.post("/charge/{subscriber_id}")
 async def charge_subscriber(subscriber_id: UUID, background_tasks: BackgroundTasks, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
-    sub = db.table("subscribers").select("*, plans(*)").eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
+    sub = db.table("subscribers").select("*").eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
     if not sub.data:
         raise HTTPException(status_code=404, detail="Subscriber not found")
 
     sub_data = sub.data[0]
-    plan = sub_data.get("plans", {})
-    if not plan:
+    plan = db.table("subscription_plans").select("*").eq("id", sub_data["plan_id"]).execute()
+    if not plan.data:
         raise HTTPException(status_code=400, detail="Subscriber has no plan")
 
+    plan_data = plan.data[0]
     today = date.today().isoformat()
     cycle = db.table("payment_cycles").insert({
         "subscriber_id": str(subscriber_id),
-        "plan_id": plan["id"],
-        "amount": plan["amount"],
-        "currency": plan.get("currency", "XAF"),
+        "plan_id": plan_data["id"],
+        "amount": plan_data["amount"],
+        "currency": plan_data.get("currency", "XAF"),
         "due_date": today,
         "status": "pending",
     }).execute()
@@ -66,7 +67,7 @@ async def charge_subscriber(subscriber_id: UUID, background_tasks: BackgroundTas
     cycle_id = cycle.data[0]["id"]
     background_tasks.add_task(initiate_payment, cycle_id)
 
-    return {"message": "Payment initiated", "cycle_id": cycle_id, "amount": plan["amount"]}
+    return {"message": "Payment initiated", "cycle_id": cycle_id, "amount": plan_data["amount"]}
 
 
 @router.get("/transactions", response_model=list[TransactionOut])

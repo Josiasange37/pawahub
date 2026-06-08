@@ -55,7 +55,7 @@ export default function Login() {
             />
             <input
               type="tel"
-              placeholder="Phone (e.g. 237653456789)"
+              placeholder="Phone (e.g. 237681752094)"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-primary-500"

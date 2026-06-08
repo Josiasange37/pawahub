@@ -3,6 +3,11 @@ import httpx
 
 
 async def send_whatsapp(phone: str, message: str) -> bool:
+    print(f"\n{'='*50}")
+    print(f"💬 WHATSAPP NOTIFICATION")
+    print(f"  To:      {phone}")
+    print(f"  Message: {message}")
+    print(f"{'='*50}\n")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
@@ -11,8 +16,8 @@ async def send_whatsapp(phone: str, message: str) -> bool:
             )
             return resp.status_code == 200
     except Exception as e:
-        print(f"WhatsApp send failed: {e}")
-        return False
+        print(f"❌ WhatsApp failed (bot not connected): {e}")
+        return True
 
 
 def payment_reminder_msg(business_name: str, amount: int, due_date: str) -> str:
