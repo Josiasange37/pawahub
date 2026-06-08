@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from auth import get_current_sme
 from database import get_db
 from supabase import Client
@@ -40,6 +40,33 @@ async def trigger_billing(background_tasks: BackgroundTasks, sme: dict = Depends
         "count": len(all_cycles),
         "status": "processing",
     }
+
+
+@router.post("/charge/{subscriber_id}")
+async def charge_subscriber(subscriber_id: UUID, background_tasks: BackgroundTasks, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sub = db.table("subscribers").select("*, plans(*)").eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
+    if not sub.data:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+
+    sub_data = sub.data[0]
+    plan = sub_data.get("plans", {})
+    if not plan:
+        raise HTTPException(status_code=400, detail="Subscriber has no plan")
+
+    today = date.today().isoformat()
+    cycle = db.table("payment_cycles").insert({
+        "subscriber_id": str(subscriber_id),
+        "plan_id": plan["id"],
+        "amount": plan["amount"],
+        "currency": plan.get("currency", "XAF"),
+        "due_date": today,
+        "status": "pending",
+    }).execute()
+
+    cycle_id = cycle.data[0]["id"]
+    background_tasks.add_task(initiate_payment, cycle_id)
+
+    return {"message": "Payment initiated", "cycle_id": cycle_id, "amount": plan["amount"]}
 
 
 @router.get("/transactions", response_model=list[TransactionOut])

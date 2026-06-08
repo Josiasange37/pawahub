@@ -20,7 +20,24 @@ export default function Dashboard() {
     api("/api/dashboard/stats", { token }).then(setStats).catch(() => {});
   }, []);
 
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+
   if (!stats) return <p>Loading...</p>;
+
+  const runBilling = async () => {
+    setLoading(true);
+    setMsg("");
+    try {
+      const res = await api("/api/billing/trigger", { method: "POST", token: getToken()! });
+      setMsg(res.message);
+      setTimeout(() => { api("/api/dashboard/stats", { token: getToken()! }).then(setStats).catch(() => {}); }, 5000);
+    } catch (e: any) {
+      setMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const cards = [
     { label: "Total Subscribers", value: String(stats.total_subscribers), color: "bg-blue-50 text-blue-700" },
@@ -36,7 +53,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <button onClick={runBilling} disabled={loading} className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-600 disabled:opacity-50">
+          {loading ? "Processing..." : "Run Payments"}
+        </button>
+      </div>
+
+      {msg && <p className="bg-yellow-50 text-yellow-800 p-3 rounded-lg mb-4 text-sm">{msg}</p>}
 
       <div className="grid grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (

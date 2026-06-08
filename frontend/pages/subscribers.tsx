@@ -40,9 +40,25 @@ export default function Subscribers() {
     load();
   };
 
+  const [charging, setCharging] = useState<string | null>(null);
+  const [chargeMsg, setChargeMsg] = useState("");
+
   const deactivate = async (id: string) => {
     await api(`/api/subscribers/${id}`, { method: "DELETE", token: getToken()! });
     load();
+  };
+
+  const chargeNow = async (id: string) => {
+    setCharging(id);
+    setChargeMsg("");
+    try {
+      const res = await api(`/api/billing/charge/${id}`, { method: "POST", token: getToken()! });
+      setChargeMsg(`${res.amount.toLocaleString()} XAF payment initiated for this subscriber`);
+    } catch (e: any) {
+      setChargeMsg(e.message);
+    } finally {
+      setCharging(null);
+    }
   };
 
   return (
@@ -70,6 +86,8 @@ export default function Subscribers() {
         </form>
       )}
 
+      {chargeMsg && <p className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-4 text-sm">{chargeMsg}</p>}
+
       <div className="bg-white rounded-xl border border-gray-200">
         {subs.map((sub) => (
           <div key={sub.id} className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0">
@@ -82,7 +100,13 @@ export default function Subscribers() {
                 {sub.is_active ? "Active" : "Inactive"}
               </span>
               {sub.is_active && (
-                <button onClick={() => deactivate(sub.id)} className="text-xs text-red-500 hover:text-red-700">Deactivate</button>
+                <>
+                  <button onClick={() => chargeNow(sub.id)} disabled={charging === sub.id}
+                    className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 disabled:opacity-50">
+                    {charging === sub.id ? "..." : "Charge Now"}
+                  </button>
+                  <button onClick={() => deactivate(sub.id)} className="text-xs text-red-500 hover:text-red-700">Deactivate</button>
+                </>
               )}
             </div>
           </div>
