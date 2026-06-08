@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file: ./backend/.env
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+    depends_on:
+      - baileys-bot
+
+  baileys-bot:
+    build: ./baileys-bot
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./baileys-bot/auth_info:/app/auth_info
