@@ -15,7 +15,9 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    api("/api/dashboard/stats", { token: getToken()! }).then(setStats);
+    const token = getToken();
+    if (!token) return;
+    api("/api/dashboard/stats", { token }).then(setStats).catch(() => {});
   }, []);
 
   if (!stats) return <p>Loading...</p>;

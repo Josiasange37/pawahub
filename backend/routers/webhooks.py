@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, HTTPException, Depends, BackgroundTasks
 from database import get_db
 from supabase import Client
+from services.billing_engine import complete_payment, fail_payment
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
 
 @router.post("/pawapay")
-async def pawapay_webhook(request: Request, db: Client = Depends(get_db)):
+async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, db: Client = Depends(get_db)):
     body = await request.json()
 
     event_id = body.get("depositId") or body.get("id")
@@ -28,18 +29,13 @@ async def pawapay_webhook(request: Request, db: Client = Depends(get_db)):
     deposit_id = body.get("depositId")
     status = body.get("status")
     if deposit_id and status:
-        up = {"updated_at": "now()"}
-        if status == "COMPLETED":
-            up["status"] = "completed"
-            up["pawapay_status"] = "COMPLETED"
-            db.table("transactions").update(up).eq("pawapay_deposit_id", deposit_id).execute()
-            tx = db.table("transactions").select("cycle_id").eq("pawapay_deposit_id", deposit_id).execute()
-            if tx.data and tx.data[0].get("cycle_id"):
-                db.table("payment_cycles").update({"status": "paid"}).eq("id", tx.data[0]["cycle_id"]).execute()
-        elif status in ("FAILED", "DECLINED", "EXPIRED"):
-            up["status"] = "failed"
-            up["pawapay_status"] = status
-            db.table("transactions").update(up).eq("pawapay_deposit_id", deposit_id).execute()
+        tx = db.table("transactions").select("cycle_id").eq("pawapay_deposit_id", deposit_id).execute()
+        cycle_id = tx.data[0]["cycle_id"] if tx.data else None
+
+        if status == "COMPLETED" and cycle_id:
+            background_tasks.add_task(complete_payment, cycle_id, deposit_id)
+        elif status in ("FAILED", "DECLINED", "EXPIRED") and cycle_id:
+            background_tasks.add_task(fail_payment, cycle_id, deposit_id, status)
 
     return {"status": "received"}
 

@@ -1,34 +1,37 @@
 from datetime import date, datetime, timedelta
 import uuid
+import asyncio
 from database import get_db
 from services.pawapay import initiate_deposit, check_deposit_status
-from services.notifications import notify_payment_reminder, notify_payment_success, notify_payment_failed
-import asyncio
+from services.notifications import notify_payment_success, notify_payment_failed
 
 
-async def process_payment_cycle(cycle_id: str):
+async def _fetch_cycle_context(cycle_id: str):
     db = get_db()
-    cycle = db.table("payment_cycles").select("*, subscribers!inner(*, sme_id, plans:plan_id(*), sme:subscribers!sme_id(*))").eq("id", cycle_id).execute()
+    cycle = db.table("payment_cycles").select("*").eq("id", cycle_id).execute()
     if not cycle.data:
-        print(f"Cycle {cycle_id} not found")
-        return
-
+        return None, None, None, None
     c = cycle.data[0]
-    subscriber = db.table("subscribers").select("*, plans(*), sme:subscribers!inner(sme_id)").eq("id", c["subscriber_id"]).execute()
-    if not subscriber.data:
-        return
+    sub = db.table("subscribers").select("*").eq("id", c["subscriber_id"]).execute()
+    if not sub.data:
+        return None, None, None, None
+    plan = db.table("subscription_plans").select("*").eq("id", c["plan_id"]).execute()
+    sme = db.table("smes").select("*").eq("id", sub.data[0]["sme_id"]).execute()
+    if not plan.data or not sme.data:
+        return None, None, None, None
+    return c, sub.data[0], plan.data[0], sme.data[0]
 
-    sub = subscriber.data[0]
-    plan = sub.get("plans", {})
-    sme = db.table("smes").select("*").eq("id", sub["sme_id"]).execute()
-    if not sme.data:
-        return
-    sme_data = sme.data[0]
+
+async def initiate_payment(cycle_id: str):
+    db = get_db()
+    c, sub, plan, sme = await _fetch_cycle_context(cycle_id)
+    if not c:
+        return {"error": "cycle not found"}
 
     deposit_ref = str(uuid.uuid4())
     result = await initiate_deposit(c["amount"], sub["phone"], deposit_ref)
 
-    db.table("transactions").insert({
+    tx = db.table("transactions").insert({
         "sme_id": sub["sme_id"],
         "cycle_id": cycle_id,
         "subscriber_id": c["subscriber_id"],
@@ -40,101 +43,117 @@ async def process_payment_cycle(cycle_id: str):
         "status": "pending",
     }).execute()
 
+    transaction_id = tx.data[0]["id"] if tx.data else None
+
     if not result["success"]:
         db.table("payment_cycles").update({
             "status": "failed",
             "last_attempt_at": datetime.utcnow().isoformat(),
             "retry_count": c["retry_count"] + 1,
         }).eq("id", cycle_id).execute()
+        if transaction_id:
+            db.table("transactions").update({"status": "failed", "updated_at": datetime.utcnow().isoformat()}).eq("id", transaction_id).execute()
         await notify_payment_failed(
             sub["phone"], sub.get("name", "Customer"),
-            sme_data["business_name"], c["amount"],
+            sme["business_name"], c["amount"],
             plan.get("name", "Subscription"),
-            sme_data["email"], str(result.get("error", "API error")),
+            sme["email"], str(result.get("error", "API error")),
         )
+        return {"error": "initiation failed", "detail": result.get("error")}
+
+    asyncio.create_task(_poll_fallback(deposit_ref, transaction_id, cycle_id, plan.get("interval_days", 30)))
+
+    return {"deposit_id": deposit_ref, "transaction_id": transaction_id, "status": "initiated"}
+
+
+async def complete_payment(cycle_id: str, deposit_id: str, interval_days: int = 30):
+    db = get_db()
+    c, sub, plan, sme = await _fetch_cycle_context(cycle_id)
+    if not c:
         return
 
-    for attempt in range(12):
-        await asyncio.sleep(10)
-        status = await check_deposit_status(deposit_ref)
-        if status["success"]:
-            s = status["status"]
-            if s == "COMPLETED":
-                db.table("payment_cycles").update({
-                    "status": "paid",
-                    "last_attempt_at": datetime.utcnow().isoformat(),
-                }).eq("id", cycle_id).execute()
-                db.table("transactions").update({
-                    "status": "completed",
-                    "pawapay_status": "COMPLETED",
-                    "updated_at": datetime.utcnow().isoformat(),
-                }).eq("pawapay_deposit_id", deposit_ref).execute()
-                next_due = date.today() + timedelta(days=plan.get("interval_days", 30))
-                db.table("payment_cycles").insert({
-                    "subscriber_id": c["subscriber_id"],
-                    "plan_id": c["plan_id"],
-                    "amount": c["amount"],
-                    "currency": c.get("currency", "XAF"),
-                    "due_date": next_due.isoformat(),
-                    "status": "pending",
-                }).execute()
-                await notify_payment_success(
-                    sub["phone"], sub.get("name", "Customer"),
-                    sme_data["business_name"], c["amount"],
-                    plan.get("name", "Subscription"),
-                    sme_data["email"],
-                )
-                return
-            elif s in ("FAILED", "DECLINED", "EXPIRED"):
-                new_retries = c["retry_count"] + 1
-                if new_retries >= 3:
-                    new_status = "failed"
-                else:
-                    new_status = "retrying"
-                db.table("payment_cycles").update({
-                    "status": new_status,
-                    "last_attempt_at": datetime.utcnow().isoformat(),
-                    "retry_count": new_retries,
-                }).eq("id", cycle_id).execute()
-                db.table("transactions").update({
-                    "status": "failed",
-                    "pawapay_status": s,
-                    "updated_at": datetime.utcnow().isoformat(),
-                }).eq("pawapay_deposit_id", deposit_ref).execute()
-                await notify_payment_failed(
-                    sub["phone"], sub.get("name", "Customer"),
-                    sme_data["business_name"], c["amount"],
-                    plan.get("name", "Subscription"),
-                    sme_data["email"],
-                )
-                return
-
     db.table("payment_cycles").update({
-        "status": "timeout",
+        "status": "paid",
         "last_attempt_at": datetime.utcnow().isoformat(),
     }).eq("id", cycle_id).execute()
+
     db.table("transactions").update({
-        "status": "timeout",
-        "pawapay_status": "TIMEOUT",
+        "status": "completed",
+        "pawapay_status": "COMPLETED",
         "updated_at": datetime.utcnow().isoformat(),
-    }).eq("pawapay_deposit_id", deposit_ref).execute()
+    }).eq("pawapay_deposit_id", deposit_id).execute()
+
+    next_due = date.today() + timedelta(days=interval_days)
+    db.table("payment_cycles").insert({
+        "subscriber_id": c["subscriber_id"],
+        "plan_id": c["plan_id"],
+        "amount": c["amount"],
+        "currency": c.get("currency", "XAF"),
+        "due_date": next_due.isoformat(),
+        "status": "pending",
+    }).execute()
+
+    await notify_payment_success(
+        sub["phone"], sub.get("name", "Customer"),
+        sme["business_name"], c["amount"],
+        plan.get("name", "Subscription"),
+        sme["email"],
+    )
+
+
+async def fail_payment(cycle_id: str, deposit_id: str, pawapay_status: str = "FAILED"):
+    db = get_db()
+    c, sub, plan, sme = await _fetch_cycle_context(cycle_id)
+    if not c:
+        return
+
+    new_retries = c["retry_count"] + 1
+    new_status = "retrying" if new_retries < 3 else "failed"
+
+    db.table("payment_cycles").update({
+        "status": new_status,
+        "last_attempt_at": datetime.utcnow().isoformat(),
+        "retry_count": new_retries,
+    }).eq("id", cycle_id).execute()
+
+    db.table("transactions").update({
+        "status": "failed",
+        "pawapay_status": pawapay_status,
+        "updated_at": datetime.utcnow().isoformat(),
+    }).eq("pawapay_deposit_id", deposit_id).execute()
+
+    await notify_payment_failed(
+        sub["phone"], sub.get("name", "Customer"),
+        sme["business_name"], c["amount"],
+        plan.get("name", "Subscription"),
+        sme["email"], pawapay_status,
+    )
+
+
+async def _poll_fallback(deposit_id: str, transaction_id: str, cycle_id: str, interval_days: int):
+    await asyncio.sleep(180)
+    db = get_db()
+    if transaction_id:
+        tx = db.table("transactions").select("status").eq("id", transaction_id).execute()
+        if tx.data and tx.data[0]["status"] != "pending":
+            return
+
+    status = await check_deposit_status(deposit_id)
+    if status["success"]:
+        s = status["status"]
+        if s == "COMPLETED":
+            await complete_payment(cycle_id, deposit_id, interval_days)
+        elif s in ("FAILED", "DECLINED", "EXPIRED"):
+            await fail_payment(cycle_id, deposit_id, s)
 
 
 async def run_daily_billing():
     db = get_db()
     today = date.today().isoformat()
-    due_cycles = db.table("payment_cycles")\
-        .select("*")\
-        .eq("status", "pending")\
-        .lte("due_date", today)\
-        .execute()
 
-    retry_cycles = db.table("payment_cycles")\
-        .select("*")\
-        .eq("status", "retrying")\
-        .execute()
+    due = db.table("payment_cycles").select("*").eq("status", "pending").lte("due_date", today).execute()
+    retry = db.table("payment_cycles").select("*").eq("status", "retrying").execute()
 
-    cycles = due_cycles.data + retry_cycles.data
-    for cycle in cycles:
-        await process_payment_cycle(cycle["id"])
-        await asyncio.sleep(5)
+    for cycle in due.data + retry.data:
+        await initiate_payment(cycle["id"])
+        await asyncio.sleep(1)

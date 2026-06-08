@@ -24,8 +24,10 @@ export default function Subscribers() {
   const [form, setForm] = useState({ plan_id: "", name: "", phone: "" });
 
   const load = () => {
-    api("/api/subscribers", { token: getToken()! }).then(setSubs);
-    api("/api/plans", { token: getToken()! }).then(setPlans);
+    const token = getToken();
+    if (!token) return;
+    api("/api/subscribers", { token }).then(setSubs).catch(() => {});
+    api("/api/plans", { token }).then(setPlans).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);

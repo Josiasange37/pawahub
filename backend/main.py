@@ -1,8 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from routers import auth, plans, subscribers, billing, webhooks, dashboard
+from services.billing_engine import run_daily_billing
 
-app = FastAPI(title="PawaSub API", version="1.0.0")
+scheduler = AsyncIOScheduler()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler.add_job(run_daily_billing, "interval", hours=6, id="daily_billing")
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="PawaSub API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

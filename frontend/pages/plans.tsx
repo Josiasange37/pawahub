@@ -16,7 +16,11 @@ export default function Plans() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", amount: "", interval_days: "30" });
 
-  const load = () => api("/api/plans", { token: getToken()! }).then(setPlans);
+  const load = () => {
+    const token = getToken();
+    if (!token) return;
+    api("/api/plans", { token }).then(setPlans).catch(() => {});
+  };
 
   useEffect(() => { load(); }, []);
 

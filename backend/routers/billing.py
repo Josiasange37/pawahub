@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from auth import get_current_sme
 from database import get_db
 from supabase import Client
 from schemas import PaymentCycleOut, TransactionOut
+from services.billing_engine import initiate_payment
 from uuid import UUID
-from datetime import date, timedelta
+from datetime import date
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -20,7 +21,7 @@ async def list_cycles(sme: dict = Depends(get_current_sme), db: Client = Depends
 
 
 @router.post("/trigger")
-async def trigger_billing(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+async def trigger_billing(background_tasks: BackgroundTasks, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     today = date.today().isoformat()
     subs = db.table("subscribers").select("id").eq("sme_id", sme["id"]).execute()
     sub_ids = [s["id"] for s in subs.data]
@@ -28,7 +29,17 @@ async def trigger_billing(sme: dict = Depends(get_current_sme), db: Client = Dep
         return {"message": "No subscribers found"}
 
     due = db.table("payment_cycles").select("*").in_("subscriber_id", sub_ids).eq("status", "pending").lte("due_date", today).execute()
-    return {"message": f"Found {len(due.data)} due payments. Scheduler will process them."}
+    retry = db.table("payment_cycles").select("*").in_("subscriber_id", sub_ids).eq("status", "retrying").execute()
+    all_cycles = due.data + retry.data
+
+    for cycle in all_cycles:
+        background_tasks.add_task(initiate_payment, cycle["id"])
+
+    return {
+        "message": f"Processing {len(all_cycles)} payments in background",
+        "count": len(all_cycles),
+        "status": "processing",
+    }
 
 
 @router.get("/transactions", response_model=list[TransactionOut])

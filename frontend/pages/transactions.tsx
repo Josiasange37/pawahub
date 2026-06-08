@@ -23,7 +23,9 @@ export default function Transactions() {
   const [txs, setTxs] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    api("/api/billing/transactions", { token: getToken()! })
+    const token = getToken();
+    if (!token) return;
+    api("/api/billing/transactions", { token })
       .then(setTxs)
       .catch(() => setTxs([]));
   }, []);
