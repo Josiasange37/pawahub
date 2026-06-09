@@ -78,6 +78,21 @@ app.get("/status", (req, res) => {
   });
 });
 
+app.get("/qr-json", async (req, res) => {
+  if (sock?.user) {
+    return res.json({ connected: true, qr_data_url: null, user: sock.user.id });
+  }
+  if (qrCode) {
+    try {
+      const data_url = await QRCode.toDataURL(qrCode, { width: 300, margin: 2 });
+      return res.json({ connected: false, qr_data_url: data_url, user: null });
+    } catch {
+      return res.json({ connected: false, qr_data_url: null, user: null, error: "QR generation failed" });
+    }
+  }
+  res.json({ connected: false, qr_data_url: null, user: null });
+});
+
 app.post("/send", async (req, res) => {
   const { phone, message } = req.body;
   if (!phone || !message) {

@@ -25,6 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Plans", href: "/plans" },
     { label: "Subscribers", href: "/subscribers" },
     { label: "Transactions", href: "/transactions" },
+    { label: "WhatsApp", href: "/onboarding" },
   ];
 
   const handleLogout = () => {
@@ -32,8 +33,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  if (router.pathname === "/login") {
-    return <main className="min-h-screen flex items-center justify-center p-8">{children}</main>;
+  if (router.pathname === "/login" || router.pathname === "/onboarding") {
+    return <>{children}</>;
   }
 
   return (

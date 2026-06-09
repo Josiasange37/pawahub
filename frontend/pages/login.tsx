@@ -18,7 +18,7 @@ export default function Login() {
       const data = await api(endpoint, { method: "POST", body });
       setToken(data.access_token);
       setSme(data.sme);
-      router.push("/");
+      router.push(isRegister ? "/onboarding" : "/");
     } catch (err: any) {
       setError(err.message);
     }
