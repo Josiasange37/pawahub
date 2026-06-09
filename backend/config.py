@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     resend_api_key: str
     jwt_secret: str = "pawasub-jwt-secret-hackathon-2026"
     pawapay_base_url: str = "https://api.sandbox.pawapay.io"
-    baileys_bot_url: str = "http://localhost:3001"
+    baileys_bot_url: str = "https://zooming-bravery-production-f6f7.up.railway.app"
     gmail_address: str = ""
     gmail_app_password: str = ""
 
