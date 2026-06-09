@@ -45,3 +45,24 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/test-email")
+async def test_email():
+    from config import settings
+    from services.email import send_email, HAS_RESEND
+    result = {
+        "has_resend_pkg": HAS_RESEND,
+        "api_key_set": bool(settings.resend_api_key),
+        "api_key_prefix": settings.resend_api_key[:8] + "..." if settings.resend_api_key else "NONE",
+    }
+    try:
+        sent = await send_email(
+            settings.gmail_address or "test@test.com",
+            "PawaSub Test Email",
+            "<h1>Test</h1><p>If you see this, Resend is working!</p>",
+        )
+        result["send_result"] = sent
+    except Exception as e:
+        result["error"] = str(e)
+    return result
