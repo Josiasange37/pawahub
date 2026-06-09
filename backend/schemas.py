@@ -113,3 +113,83 @@ class DashboardStats(BaseModel):
     pending_payments: int
     failed_payments: int
     success_rate: float
+
+
+class PreferencesCreate(BaseModel):
+    business_type: str  # "solo" or "enterprise"
+    use_case: str  # "subscriptions" or "sales"
+
+
+class PreferencesOut(BaseModel):
+    id: UUID
+    sme_id: UUID
+    business_type: str
+    use_case: str
+    onboarding_complete: bool
+    created_at: datetime
+
+
+class ProductCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: int
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class ProductOut(BaseModel):
+    id: UUID
+    sme_id: UUID
+    name: str
+    description: Optional[str]
+    price: int
+    currency: str = "XAF"
+    is_active: bool
+    created_at: datetime
+
+
+class SaleItemInput(BaseModel):
+    product_id: UUID
+    quantity: int
+
+
+class SaleCreate(BaseModel):
+    items: list[SaleItemInput]
+    customer_name: Optional[str] = None
+    customer_phone: str
+    payment_method: str = "momo"  # "momo" or "orange"
+
+
+class SaleItemOut(BaseModel):
+    id: UUID
+    product_id: UUID
+    product_name: str
+    quantity: int
+    unit_price: int
+    subtotal: int
+
+
+class SaleOut(BaseModel):
+    id: UUID
+    sme_id: UUID
+    customer_name: Optional[str]
+    customer_phone: str
+    total_amount: int
+    currency: str
+    payment_method: str
+    payment_status: str
+    receipt_number: Optional[str]
+    created_at: datetime
+    items: list[SaleItemOut] = []
+
+
+class ReceiptData(BaseModel):
+    sale: SaleOut
+    sme_name: str
+    sme_phone: str
+    business_name: str

@@ -1,0 +1,256 @@
+import uuid
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
+from schemas import SaleCreate, SaleOut, SaleItemOut
+from auth import get_current_sme
+from database import get_db
+from supabase import Client
+
+router = APIRouter(prefix="/api/pos", tags=["pos"])
+
+
+def generate_receipt_number():
+    return f"PS-{uuid.uuid4().hex[:8].upper()}"
+
+
+@router.get("/products")
+async def list_active_products(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    result = db.table("products").select("*").eq("sme_id", sme["id"]).eq("is_active", True).order("name").execute()
+    return result.data
+
+
+@router.post("/sales", response_model=SaleOut)
+async def create_sale(body: SaleCreate, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    if not body.items:
+        raise HTTPException(status_code=400, detail="No items in sale")
+
+    # Fetch products and calculate totals
+    product_ids = [str(item.product_id) for item in body.items]
+    products_result = db.table("products").select("*").in_("id", product_ids).eq("sme_id", sme["id"]).execute()
+    products_map = {p["id"]: p for p in products_result.data}
+
+    if len(products_map) != len(product_ids):
+        raise HTTPException(status_code=400, detail="One or more products not found")
+
+    total_amount = 0
+    sale_items = []
+    for item in body.items:
+        product = products_map[str(item.product_id)]
+        subtotal = product["price"] * item.quantity
+        total_amount += subtotal
+        sale_items.append({
+            "product_id": str(item.product_id),
+            "product_name": product["name"],
+            "quantity": item.quantity,
+            "unit_price": product["price"],
+            "subtotal": subtotal,
+        })
+
+    receipt_number = generate_receipt_number()
+
+    # Create the sale
+    sale_result = db.table("pos_sales").insert({
+        "sme_id": sme["id"],
+        "customer_name": body.customer_name,
+        "customer_phone": body.customer_phone,
+        "total_amount": total_amount,
+        "payment_method": body.payment_method,
+        "payment_status": "pending",
+        "receipt_number": receipt_number,
+    }).execute()
+
+    if not sale_result.data:
+        raise HTTPException(status_code=500, detail="Failed to create sale")
+
+    sale = sale_result.data[0]
+
+    # Create sale items
+    for item in sale_items:
+        item["sale_id"] = sale["id"]
+    db.table("pos_sale_items").insert(sale_items).execute()
+
+    # Return complete sale
+    return SaleOut(
+        id=sale["id"],
+        sme_id=sale["sme_id"],
+        customer_name=sale["customer_name"],
+        customer_phone=sale["customer_phone"],
+        total_amount=sale["total_amount"],
+        currency=sale["currency"],
+        payment_method=sale["payment_method"],
+        payment_status=sale["payment_status"],
+        receipt_number=sale["receipt_number"],
+        created_at=sale["created_at"],
+        items=[SaleItemOut(**i) for i in sale_items],
+    )
+
+
+@router.post("/sales/{sale_id}/charge")
+async def charge_sale(sale_id: str, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sale_result = db.table("pos_sales").select("*").eq("id", sale_id).eq("sme_id", sme["id"]).execute()
+    if not sale_result.data:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    sale = sale_result.data[0]
+
+    # Initiate payment via pawaPay
+    from services.pawapay import initiate_deposit
+    try:
+        deposit = await initiate_deposit(
+            amount=sale["total_amount"],
+            phone=sale["customer_phone"],
+            provider=sale["payment_method"],
+        )
+        db.table("pos_sales").update({
+            "payment_status": "processing",
+            "pawapay_deposit_id": deposit.get("depositId"),
+        }).eq("id", sale_id).execute()
+
+        return {"message": "Payment initiated", "deposit_id": deposit.get("depositId")}
+    except Exception as e:
+        db.table("pos_sales").update({
+            "payment_status": "failed",
+        }).eq("id", sale_id).execute()
+        raise HTTPException(status_code=500, detail=f"Payment failed: {str(e)}")
+
+
+@router.get("/sales", response_model=list[SaleOut])
+async def list_sales(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sales_result = db.table("pos_sales").select("*").eq("sme_id", sme["id"]).order("created_at", desc=True).execute()
+
+    sales = []
+    for sale in sales_result.data:
+        items_result = db.table("pos_sale_items").select("*").eq("sale_id", sale["id"]).execute()
+        sales.append(SaleOut(
+            id=sale["id"],
+            sme_id=sale["sme_id"],
+            customer_name=sale["customer_name"],
+            customer_phone=sale["customer_phone"],
+            total_amount=sale["total_amount"],
+            currency=sale["currency"],
+            payment_method=sale["payment_method"],
+            payment_status=sale["payment_status"],
+            receipt_number=sale["receipt_number"],
+            created_at=sale["created_at"],
+            items=[SaleItemOut(**i) for i in items_result.data],
+        ))
+
+    return sales
+
+
+@router.get("/sales/{sale_id}/receipt")
+async def get_receipt(sale_id: str, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sale_result = db.table("pos_sales").select("*").eq("id", sale_id).eq("sme_id", sme["id"]).execute()
+    if not sale_result.data:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    sale = sale_result.data[0]
+    items_result = db.table("pos_sale_items").select("*").eq("sale_id", sale_id).execute()
+
+    return {
+        "sale": SaleOut(
+            id=sale["id"],
+            sme_id=sale["sme_id"],
+            customer_name=sale["customer_name"],
+            customer_phone=sale["customer_phone"],
+            total_amount=sale["total_amount"],
+            currency=sale["currency"],
+            payment_method=sale["payment_method"],
+            payment_status=sale["payment_status"],
+            receipt_number=sale["receipt_number"],
+            created_at=sale["created_at"],
+            items=[SaleItemOut(**i) for i in items_result.data],
+        ),
+        "sme_name": sme["business_name"],
+        "sme_phone": sme["phone"],
+        "business_name": sme["business_name"],
+    }
+
+
+@router.get("/sales/{sale_id}/receipt-pdf")
+async def download_receipt_pdf(sale_id: str, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sale_result = db.table("pos_sales").select("*").eq("id", sale_id).eq("sme_id", sme["id"]).execute()
+    if not sale_result.data:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    sale = sale_result.data[0]
+    items_result = db.table("pos_sale_items").select("*").eq("sale_id", sale_id).execute()
+
+    from services.receipt import generate_receipt_pdf
+    file_path = generate_receipt_pdf(
+        receipt_number=sale["receipt_number"],
+        business_name=sme["business_name"],
+        business_phone=sme["phone"],
+        customer_name=sale.get("customer_name", ""),
+        customer_phone=sale["customer_phone"],
+        items=items_result.data,
+        total_amount=sale["total_amount"],
+        payment_method=sale["payment_method"],
+        payment_status=sale["payment_status"],
+        created_at=sale["created_at"],
+    )
+
+    return FileResponse(
+        file_path,
+        media_type="application/pdf",
+        filename=f"receipt-{sale['receipt_number']}.pdf",
+    )
+
+
+@router.get("/stats")
+async def pos_stats(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sales = db.table("pos_sales").select("total_amount, payment_status").eq("sme_id", sme["id"]).execute()
+    products = db.table("products").select("id").eq("sme_id", sme["id"]).eq("is_active", True).execute()
+
+    total_sales = len(sales.data)
+    total_revenue = sum(s["total_amount"] for s in sales.data if s["payment_status"] == "completed")
+    pending = sum(1 for s in sales.data if s["payment_status"] == "pending")
+
+    return {
+        "total_sales": total_sales,
+        "total_revenue": total_revenue,
+        "pending_payments": pending,
+        "active_products": len(products.data),
+    }
+
+
+@router.post("/sales/{sale_id}/send-receipt")
+async def send_receipt(sale_id: str, channel: str = "whatsapp", sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sale_result = db.table("pos_sales").select("*").eq("id", sale_id).eq("sme_id", sme["id"]).execute()
+    if not sale_result.data:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    sale = sale_result.data[0]
+    items_result = db.table("pos_sale_items").select("*").eq("sale_id", sale_id).execute()
+
+    # Build receipt message
+    method_label = "MTN Mobile Money" if sale["payment_method"] == "momo" else "Orange Money"
+    items_text = "\n".join([
+        f"  {i['product_name']}  x{i['quantity']}  {i['subtotal']:,} XAF"
+        for i in items_result.data
+    ])
+
+    message = (
+        f"=== {sme['business_name']} ===\n"
+        f"Receipt #{sale['receipt_number']}\n"
+        f"Date: {sale['created_at'][:10]}\n\n"
+        f"Items:\n{items_text}\n\n"
+        f"Total: {sale['total_amount']:,} XAF\n"
+        f"Payment: {method_label}\n"
+        f"Status: {sale['payment_status'].upper()}\n\n"
+        f"Thank you for your purchase!\n"
+        f"Contact: {sme['business_name']} | {sme['phone']}"
+    )
+
+    if channel == "whatsapp":
+        from services.whatsapp import send_whatsapp_message
+        try:
+            await send_whatsapp_message(sale["customer_phone"], message)
+            return {"message": "Receipt sent via WhatsApp", "channel": "whatsapp"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to send via WhatsApp: {str(e)}")
+    elif channel == "email":
+        # Would need customer email - return error if not available
+        raise HTTPException(status_code=400, detail="Email receipts require customer email address")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid channel. Use 'whatsapp' or 'email'")
