@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, getToken } from "../lib/api";
+import { SkeletonCards } from "../components/Skeleton";
+import { showToast } from "../components/Toast";
 
 interface Stats {
   total_subscribers: number;
@@ -13,63 +15,111 @@ interface Stats {
 
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    api("/api/dashboard/stats", { token }).then(setStats).catch((e) => {
-      console.error("Dashboard stats error:", e);
-      setError(e.message);
-    });
+    api("/api/dashboard/stats", { token })
+      .then(setStats)
+      .catch((e) => showToast(e.message, "error"))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (error) return <p className="text-center text-red-500 mt-12">{error}</p>;
-  if (!stats) return <p className="text-center text-gray-500 mt-12">Loading...</p>;
-
   const runBilling = async () => {
-    setLoading(true);
-    setMsg("");
+    setBillingLoading(true);
     try {
       const res = await api("/api/billing/trigger", { method: "POST", token: getToken()! });
-      setMsg(res.message);
-      setTimeout(() => { api("/api/dashboard/stats", { token: getToken()! }).then(setStats).catch(() => {}); }, 5000);
+      showToast(res.message, "success");
+      setTimeout(async () => {
+        const fresh = await api("/api/dashboard/stats", { token: getToken()! });
+        setStats(fresh);
+      }, 5000);
     } catch (e: any) {
-      setMsg(e.message);
+      showToast(e.message, "error");
     } finally {
-      setLoading(false);
+      setBillingLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <div className="animate-pulse bg-gray-200 rounded h-8 w-48" />
+          <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-36" />
+        </div>
+        <SkeletonCards count={4} />
+        <div className="mt-8 space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="animate-pulse bg-gray-200 rounded-xl h-16" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) return null;
+
   const cards = [
-    { label: "Total Subscribers", value: String(stats.total_subscribers), color: "bg-blue-50 text-blue-700" },
-    { label: "Active", value: String(stats.active_subscribers), color: "bg-green-50 text-green-700" },
-    { label: "Revenue (XAF)", value: stats.total_revenue.toLocaleString(), color: "bg-purple-50 text-purple-700" },
-    { label: "Success Rate", value: `${stats.success_rate}%`, color: "bg-teal-50 text-teal-700" },
+    { label: "Total Subscribers", value: String(stats.total_subscribers), color: "bg-blue-50 text-blue-700", icon: "👥" },
+    { label: "Active", value: String(stats.active_subscribers), color: "bg-green-50 text-green-700", icon: "✅" },
+    { label: "Revenue (XAF)", value: stats.total_revenue.toLocaleString(), color: "bg-purple-50 text-purple-700", icon: "💰" },
+    { label: "Success Rate", value: `${stats.success_rate}%`, color: "bg-teal-50 text-teal-700", icon: "📊" },
   ];
 
   const alerts = [
-    { label: "Pending Payments", value: stats.pending_payments, color: "text-yellow-600" },
-    { label: "Failed Payments", value: stats.failed_payments, color: "text-red-600" },
+    { label: "Pending Payments", value: stats.pending_payments, color: "text-yellow-600", bg: "bg-yellow-50" },
+    { label: "Failed Payments", value: stats.failed_payments, color: "text-red-600", bg: "bg-red-50" },
   ];
+
+  const isNewUser = stats.total_subscribers === 0 && stats.total_revenue === 0;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <button onClick={runBilling} disabled={loading} className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-600 disabled:opacity-50">
-          {loading ? "Processing..." : "Run Payments"}
+        <button
+          onClick={runBilling}
+          disabled={billingLoading}
+          className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-600 disabled:opacity-50 flex items-center gap-2"
+        >
+          {billingLoading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
+          {billingLoading ? "Processing..." : "Run Payments"}
         </button>
       </div>
 
-      {msg && <p className="bg-yellow-50 text-yellow-800 p-3 rounded-lg mb-4 text-sm">{msg}</p>}
+      {isNewUser && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <h2 className="font-semibold text-blue-900 mb-3">Quick Setup Checklist</h2>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
+              <span>Create your first subscription plan</span>
+              <a href="/plans" className="ml-auto text-blue-600 hover:underline text-xs font-medium">Go →</a>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">2</span>
+              <span>Add your first subscriber</span>
+              <a href="/subscribers" className="ml-auto text-blue-600 hover:underline text-xs font-medium">Go →</a>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">3</span>
+              <span>Connect WhatsApp for notifications</span>
+              <a href="/onboarding" className="ml-auto text-blue-600 hover:underline text-xs font-medium">Go →</a>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (
-          <div key={c.label} className={`p-6 rounded-xl ${c.color}`}>
-            <p className="text-sm opacity-75">{c.label}</p>
+          <div key={c.label} className={`p-6 rounded-xl ${c.color} transition hover:scale-[1.02]`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm opacity-75">{c.label}</p>
+              <span className="text-lg">{c.icon}</span>
+            </div>
             <p className="text-3xl font-bold mt-1">{c.value}</p>
           </div>
         ))}
@@ -78,11 +128,14 @@ export default function Dashboard() {
       {alerts.some((a) => a.value > 0) && (
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="font-semibold mb-4">Needs Attention</h2>
-          {alerts.filter(a => a.value > 0).map((a) => (
-            <p key={a.label} className={`${a.color} text-sm`}>
-              {a.label}: {a.value}
-            </p>
-          ))}
+          <div className="space-y-2">
+            {alerts.filter((a) => a.value > 0).map((a) => (
+              <div key={a.label} className={`${a.bg} p-3 rounded-lg flex items-center justify-between`}>
+                <span className={`${a.color} text-sm font-medium`}>{a.label}</span>
+                <span className={`${a.color} text-lg font-bold`}>{a.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
