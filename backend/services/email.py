@@ -1,12 +1,6 @@
 import asyncio
+import httpx
 from config import settings
-
-try:
-    import resend
-    resend.api_key = settings.resend_api_key
-    HAS_RESEND = True
-except ImportError:
-    HAS_RESEND = False
 
 
 async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bool:
@@ -18,22 +12,31 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
     print(f"  Body:    {html[:300]}...")
     print(f"{'='*50}\n")
 
-    if not HAS_RESEND or not settings.resend_api_key:
+    if not settings.resend_api_key:
         print(f"⚠️  Resend not configured — email to {to} logged to console only")
         return True
 
-    def _send():
-        return resend.Emails.send({
-            "from": "PawaSub <noreply@almight.me>",
-            "to": [to],
-            "subject": subject,
-            "html": html,
-        })
-
     try:
-        await asyncio.to_thread(_send)
-        print(f"✅ [{label}] Email sent to {to}")
-        return True
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": "PawaSub <noreply@almight.me>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                },
+            )
+            if resp.status_code in (200, 201):
+                print(f"✅ [{label}] Email sent to {to}")
+                return True
+            else:
+                print(f"❌ [{label}] Email failed ({resp.status_code}): {resp.text}")
+                return False
     except Exception as e:
         print(f"❌ [{label}] Email failed: {e}")
         return False

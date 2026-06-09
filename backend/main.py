@@ -50,9 +50,8 @@ async def health():
 @app.get("/test-email")
 async def test_email():
     from config import settings
-    from services.email import send_email, HAS_RESEND
+    from services.email import send_email
     result = {
-        "has_resend_pkg": HAS_RESEND,
         "api_key_set": bool(settings.resend_api_key),
         "api_key_prefix": settings.resend_api_key[:8] + "..." if settings.resend_api_key else "NONE",
     }
