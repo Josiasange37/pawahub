@@ -1,10 +1,12 @@
-import smtplib
 import asyncio
-from email.mime.text import MIMEText
 from config import settings
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
+try:
+    import resend
+    resend.api_key = settings.resend_api_key
+    HAS_RESEND = True
+except ImportError:
+    HAS_RESEND = False
 
 
 async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bool:
@@ -16,20 +18,17 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
     print(f"  Body:    {html[:300]}...")
     print(f"{'='*50}\n")
 
-    if not settings.gmail_address or not settings.gmail_app_password:
-        print(f"⚠️  Gmail not configured — email to {to} logged to console only")
+    if not HAS_RESEND or not settings.resend_api_key:
+        print(f"⚠️  Resend not configured — email to {to} logged to console only")
         return True
 
     def _send():
-        msg = MIMEText(html, "html")
-        msg["Subject"] = subject
-        msg["From"] = f"PawaSub <{settings.gmail_address}>"
-        msg["To"] = to
-
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.gmail_address, settings.gmail_app_password)
-            server.send_message(msg)
+        resend.Emails.send({
+            "from": f"PawaSub <onboarding@resend.dev>",
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        })
 
     try:
         await asyncio.to_thread(_send)
@@ -37,7 +36,7 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
         return True
     except Exception as e:
         print(f"❌ [{label}] Email failed: {e}")
-        return True
+        return False
 
 
 def payment_receipt_email(business_name: str, subscriber_name: str, amount: int, plan_name: str) -> str:
