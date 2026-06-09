@@ -24,7 +24,7 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
 
     def _send():
         return resend.Emails.send({
-            "from": "PawaSub <noreply@pawahub.com>",
+            "from": "PawaSub <noreply@almight.me>",
             "to": [to],
             "subject": subject,
             "html": html,
