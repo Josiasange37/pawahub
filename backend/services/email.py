@@ -1,12 +1,10 @@
+import smtplib
 import asyncio
+from email.mime.text import MIMEText
 from config import settings
 
-try:
-    import resend
-    resend.api_key = settings.resend_api_key
-    HAS_RESEND = True
-except ImportError:
-    HAS_RESEND = False
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
 
 
 async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bool:
@@ -18,17 +16,24 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
     print(f"  Body:    {html[:300]}...")
     print(f"{'='*50}\n")
 
-    if not HAS_RESEND or not settings.resend_api_key:
-        print(f"⚠️  Resend not configured — email to {to} logged to console only")
+    if not settings.gmail_address or not settings.gmail_app_password:
+        print(f"⚠️  Gmail not configured — email to {to} logged to console only")
         return True
 
+    clean_password = settings.gmail_app_password.replace(" ", "")
+
     def _send():
-        resend.Emails.send({
-            "from": f"PawaSub <onboarding@resend.dev>",
-            "to": [to],
-            "subject": subject,
-            "html": html,
-        })
+        msg = MIMEText(html, "html")
+        msg["Subject"] = subject
+        msg["From"] = f"PawaSub <{settings.gmail_address}>"
+        msg["To"] = to
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(settings.gmail_address, clean_password)
+            server.send_message(msg)
 
     try:
         await asyncio.to_thread(_send)
