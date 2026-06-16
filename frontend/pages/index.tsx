@@ -117,11 +117,11 @@ function GaugeChart({ value }: { value: number }) {
   });
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width="200" height="115" viewBox="0 0 200 115" className="max-w-full">
+    <div className="flex flex-col items-center w-full max-w-[220px] mx-auto">
+      <svg viewBox="0 0 200 115" className="w-full h-auto max-w-[200px]">
         {arcs}
       </svg>
-      <p className="text-2xl sm:text-4xl font-bold text-gray-900 -mt-8 sm:-mt-10">{pct.toFixed(1)}%</p>
+      <p className="text-xl sm:text-4xl font-bold text-gray-900 -mt-6 sm:-mt-10">{pct.toFixed(1)}%</p>
       <p className="text-[10px] sm:text-xs text-gray-400 font-medium mt-0.5 sm:mt-1">Sales Growth</p>
     </div>
   );
@@ -294,7 +294,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div ref={containerRef} className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-[#f5f5f7] min-h-full">
+    <div ref={containerRef} className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-[#f5f5f7] min-h-full max-w-full overflow-x-hidden">
 
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -366,9 +366,9 @@ export default function Dashboard() {
               This Week <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
-          <div className="-mx-2 sm:mx-0">
+          <div className="w-full">
             <ResponsiveContainer width="100%" height={180} minHeight={180}>
-              <BarChart data={chartData} barGap={4} barCategoryGap="30%" margin={{ left: -10, right: 0 }}>
+              <BarChart data={chartData} barGap={4} barCategoryGap="30%" margin={{ left: 0, right: 0 }}>
                 <CartesianGrid vertical={false} stroke="#f5f5f7" strokeDasharray="3 3" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#9ca3af" }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v) => `${v/1000}k`} />
@@ -407,7 +407,7 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center scale-[0.85] sm:scale-100 origin-top">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <GaugeChart value={isSales ? 0 : (s?.success_rate ?? 0)} />
           </div>
 
