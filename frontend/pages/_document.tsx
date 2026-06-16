@@ -13,6 +13,8 @@ export default function Document() {
         <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="description" content="Payment management for African SMEs" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="mask-icon" href="/icon.svg" color="#8B5CF6" />
       </Head>
       <body>
         <Main />

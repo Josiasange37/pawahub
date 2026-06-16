@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, Depends, BackgroundTasks
 from database import get_db
 from supabase import Client
 from services.billing_engine import complete_payment, fail_payment
+from services.whatsapp import send_whatsapp
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
@@ -39,13 +40,34 @@ async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, d
             background_tasks.add_task(fail_payment, cycle_id, deposit_id, status)
 
         # Check if it's a POS sale
-        pos_sale = db.table("pos_sales").select("id").eq("pawapay_deposit_id", deposit_id).execute()
+        pos_sale = db.table("pos_sales").select("id, customer_phone, amount, customer_name, sme_id").eq("pawapay_deposit_id", deposit_id).execute()
         if pos_sale.data:
-            sale_id = pos_sale.data[0]["id"]
+            sale = pos_sale.data[0]
+            sale_id = sale["id"]
+            amount = sale.get("amount", 0)
+            phone = sale.get("customer_phone")
+            name = sale.get("customer_name", "Customer")
+            sme_id = sale.get("sme_id")
             if status == "COMPLETED":
                 db.table("pos_sales").update({"payment_status": "completed"}).eq("id", sale_id).execute()
+                if phone:
+                    msg = (
+                        f"✅ *Payment Successful!*\n\n"
+                        f"Hi {name},\n"
+                        f"Your payment of *{amount:,} XAF* has been received successfully.\n\n"
+                        f"Thank you for your purchase!"
+                    )
+                    await send_whatsapp(phone, msg, sme_id=sme_id)
             elif status in ("FAILED", "DECLINED", "EXPIRED"):
                 db.table("pos_sales").update({"payment_status": "failed"}).eq("id", sale_id).execute()
+                if phone:
+                    msg = (
+                        f"❌ *Payment Failed*\n\n"
+                        f"Hi {name},\n"
+                        f"Your payment of *{amount:,} XAF* could not be processed.\n"
+                        f"Please try again or use a different payment method."
+                    )
+                    await send_whatsapp(phone, msg, sme_id=sme_id)
 
     return {"status": "received"}
 

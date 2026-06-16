@@ -1,11 +1,34 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, getToken, removeToken, getSme, getPreferencesFallback } from "../lib/api";
 import {
   LayoutDashboard, ShoppingCart, Package, History, MessageCircle,
   Users, FileText, CreditCard, Settings, LogOut, Bell, ChevronDown,
-  Zap, Menu, X
+  CheckCircle, XCircle, Menu, X
 } from "lucide-react";
+
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
+function timeAgo(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+const NOTIF_POLL_KEY = "fluxpay_last_notif_view";
 
 const getBotUrl = () => {
   if (typeof window !== "undefined") {
@@ -67,6 +90,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [token]);
 
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchNotifs = async () => {
+      try {
+        const data = await api("/api/notifications", { token });
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unread_count || 0);
+      } catch {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
+
+  const openNotifs = () => {
+    setNotifOpen(true);
+    setUnreadCount(0);
+    try { localStorage.setItem(NOTIF_POLL_KEY, Date.now().toString()); } catch {}
+  };
+
   if (!mounted) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
       <div className="w-8 h-8 border-4 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" />
@@ -102,13 +160,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-6 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-[#8B5CF6] flex items-center justify-center">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
-        <span className="font-bold text-lg tracking-tight">
-          <span className="text-gray-900">Flux</span>
-          <span className="text-[#8B5CF6]">pay</span>
-        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" className="h-10 w-auto">
+          <defs>
+            <linearGradient id="side-logo" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#10B981" />
+            </linearGradient>
+          </defs>
+          <g transform="translate(2, 0)">
+            <path d="M 14,28 C 22,28 26,16 36,16 L 50,16" fill="none" stroke="url(#side-logo)" stroke-width="4" stroke-linecap="round" />
+            <path d="M 14,34 C 22,34 26,22 36,22 L 44,22" fill="none" stroke="url(#side-logo)" stroke-width="4" stroke-linecap="round" />
+          </g>
+          <text x="62" y="30" fill="#111827" font-family="Inter, sans-serif" font-size="14" font-weight="600" letter-spacing="-0.03em">Fluxpay</text>
+        </svg>
       </div>
 
       {/* Nav */}
@@ -194,32 +258,70 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Nav tabs (desktop) */}
             <nav className="hidden lg:flex items-center gap-1">
-              {[
-                { label: "Dashboard", href: "/" },
-                { label: "Analytics", href: "#" },
-                { label: "Reports", href: "#" },
-              ].map((tab) => (
-                <button
-                  key={tab.label}
-                  onClick={() => tab.href !== "#" && router.push(tab.href)}
-                  className={`px-4 py-1.5 rounded-xl text-sm font-medium transition ${
-                    router.pathname === tab.href
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              <button
+                onClick={() => router.push("/")}
+                className={`px-4 py-1.5 rounded-xl text-sm font-medium transition ${
+                  router.pathname === "/"
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                Dashboard
+              </button>
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Bell */}
-            <button className="relative w-9 h-9 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#8B5CF6] rounded-full" />
-            </button>
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={openNotifs}
+                className="relative w-9 h-9 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#8B5CF6] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown */}
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/5 z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-bold text-gray-900">Notifications</p>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-10 text-center text-sm text-gray-400 font-medium">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map((n) => {
+                        const ok = n.status === "completed";
+                        const Icon = ok ? CheckCircle : XCircle;
+                        return (
+                          <div
+                            key={n.id}
+                            className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 flex items-start gap-3 cursor-pointer transition"
+                          >
+                            <div className={`mt-0.5 ${ok ? "text-emerald-500" : "text-red-400"}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{n.title}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{n.description}</p>
+                            </div>
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap mt-0.5">{timeAgo(n.created_at)}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Settings */}
             <button

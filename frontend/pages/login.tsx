@@ -309,10 +309,19 @@ export default function AuthPage() {
           {/* Header Top Nav */}
           <div className="flex justify-between items-center w-full mb-auto">
             {/* Logo */}
-            <div className="font-bold text-xl tracking-tight flex items-center">
-              <span className="text-black">Flux</span>
-              <span className="text-[#8B5CF6]">pay</span>
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 225 70" className="h-12 w-auto">
+              <defs>
+                <linearGradient id="login-logo-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#8B5CF6" />
+                  <stop offset="100%" stop-color="#10B981" />
+                </linearGradient>
+              </defs>
+              <g transform="translate(5, 0)">
+                <path d="M 22,44 C 35,44 40,24 55,24 L 77,24" fill="none" stroke="url(#login-logo-grad)" stroke-width="6" stroke-linecap="round" />
+                <path d="M 22,54 C 35,54 40,34 55,34 L 67,34" fill="none" stroke="url(#login-logo-grad)" stroke-width="6" stroke-linecap="round" />
+              </g>
+              <text x="97" y="48" fill="#000000" font-family="Inter, sans-serif" font-size="22" font-weight="600" letter-spacing="-0.03em">Fluxpay</text>
+            </svg>
             
             {/* Language Selector */}
             <div 

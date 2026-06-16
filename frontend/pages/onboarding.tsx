@@ -252,7 +252,19 @@ export default function Onboarding() {
               <span className="text-white text-xs font-black">F</span>
             </div>
             <span className="text-gray-900 font-bold">
-              Flux<span className="text-[#8B5CF6]">pay</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" className="h-10 w-auto">
+                <defs>
+                  <linearGradient id="onboard-logo" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#8B5CF6" />
+                    <stop offset="100%" stop-color="#10B981" />
+                  </linearGradient>
+                </defs>
+                <g transform="translate(2, 0)">
+                  <path d="M 14,28 C 22,28 26,16 36,16 L 50,16" fill="none" stroke="url(#onboard-logo)" stroke-width="4" stroke-linecap="round" />
+                  <path d="M 14,34 C 22,34 26,22 36,22 L 44,22" fill="none" stroke="url(#onboard-logo)" stroke-width="4" stroke-linecap="round" />
+                </g>
+                <text x="62" y="30" fill="#111827" font-family="Inter, sans-serif" font-size="14" font-weight="600" letter-spacing="-0.03em">Fluxpay</text>
+              </svg>
             </span>
           </div>
           

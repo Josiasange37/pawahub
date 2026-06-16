@@ -5,6 +5,7 @@ from database import get_db
 from supabase import Client
 from uuid import UUID
 from datetime import date, timedelta
+from services.whatsapp import send_whatsapp
 
 router = APIRouter(prefix="/api/subscribers", tags=["subscribers"])
 
@@ -35,6 +36,14 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         "due_date": due_date.isoformat(),
         "status": "pending",
     }).execute()
+
+    welcome = (
+        f"👋 *Welcome to {sme['business_name']}!*\n\n"
+        f"Your subscription to *{plan_data['name']}* has been activated.\n"
+        f"Your first payment of *{plan_data['amount']:,} XAF* will be due on *{due_date}*.\n\n"
+        f"Thank you for choosing us!"
+    )
+    await send_whatsapp(body.phone, welcome, sme_id=sme["id"])
 
     return SubscriberOut(**subscriber)
 

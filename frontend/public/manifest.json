@@ -4,7 +4,7 @@
   "description": "Payment management for African SMEs — subscriptions, POS, and WhatsApp receipts",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f5f7",
+  "background_color": "#111827",
   "theme_color": "#8B5CF6",
   "orientation": "portrait-primary",
   "icons": [

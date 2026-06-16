@@ -3,7 +3,7 @@ import uuid
 import asyncio
 from database import get_db
 from services.pawapay import initiate_deposit, check_deposit_status
-from services.notifications import notify_payment_success, notify_payment_failed
+from services.notifications import notify_payment_success, notify_payment_failed, notify_payment_reminder
 
 
 async def _fetch_cycle_context(cycle_id: str):
@@ -147,11 +147,35 @@ async def _poll_fallback(deposit_id: str, transaction_id: str, cycle_id: str, in
 
 async def run_daily_billing():
     db = get_db()
-    today = date.today().isoformat()
+    today = date.today()
+    today_str = today.isoformat()
 
-    due = db.table("payment_cycles").select("*").eq("status", "pending").lte("due_date", today).execute()
+    due = db.table("payment_cycles").select("*").eq("status", "pending").lte("due_date", today_str).execute()
     retry = db.table("payment_cycles").select("*").eq("status", "retrying").execute()
 
     for cycle in due.data + retry.data:
         await initiate_payment(cycle["id"])
         await asyncio.sleep(1)
+
+    tomorrow_str = (today + timedelta(days=1)).isoformat()
+    day_after_str = (today + timedelta(days=2)).isoformat()
+    upcoming = (
+        db.table("payment_cycles")
+        .select("*")
+        .eq("status", "pending")
+        .gte("due_date", tomorrow_str)
+        .lte("due_date", day_after_str)
+        .execute()
+    )
+    for cycle in upcoming.data:
+        _, sub, plan, sme = await _fetch_cycle_context(cycle["id"])
+        if not sub:
+            continue
+        await notify_payment_reminder(
+            sub["phone"],
+            sme["business_name"],
+            cycle["amount"],
+            cycle.get("due_date", today_str),
+            sme_id=sme["id"],
+        )
+        await asyncio.sleep(0.5)

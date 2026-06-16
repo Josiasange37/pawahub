@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from routers import auth, plans, subscribers, billing, webhooks, dashboard, preferences, products, pos
+from routers import auth, plans, subscribers, billing, webhooks, dashboard, preferences, products, pos, notifications
 from services.billing_engine import run_daily_billing
 
 scheduler = AsyncIOScheduler()
@@ -41,6 +41,7 @@ app.include_router(dashboard.router)
 app.include_router(preferences.router)
 app.include_router(products.router)
 app.include_router(pos.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")

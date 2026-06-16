@@ -118,11 +118,11 @@ function GaugeChart({ value }: { value: number }) {
 
   return (
     <div className="flex flex-col items-center">
-      <svg width="200" height="115" viewBox="0 0 200 115">
+      <svg width="200" height="115" viewBox="0 0 200 115" className="max-w-full">
         {arcs}
       </svg>
-      <p className="text-4xl font-bold text-gray-900 -mt-10">{pct.toFixed(1)}%</p>
-      <p className="text-xs text-gray-400 font-medium mt-1">Sales Growth</p>
+      <p className="text-2xl sm:text-4xl font-bold text-gray-900 -mt-8 sm:-mt-10">{pct.toFixed(1)}%</p>
+      <p className="text-[10px] sm:text-xs text-gray-400 font-medium mt-0.5 sm:mt-1">Sales Growth</p>
     </div>
   );
 }
@@ -280,47 +280,47 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6 animate-pulse">
+      <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 animate-pulse">
         <div className="h-8 w-48 bg-gray-200 rounded-xl" />
-        <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-24 sm:h-28 bg-gray-200 rounded-2xl" />)}
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 h-64 bg-gray-200 rounded-2xl" />
-          <div className="h-64 bg-gray-200 rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 h-48 sm:h-64 bg-gray-200 rounded-2xl" />
+          <div className="h-48 sm:h-64 bg-gray-200 rounded-2xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="p-6 space-y-6 bg-[#f5f5f7] min-h-full">
+    <div ref={containerRef} className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-[#f5f5f7] min-h-full">
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales Overview</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Your current sales summary and activity</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Overview</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Your current sales summary and activity</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition">
-            This Month <ChevronDown className="w-4 h-4 opacity-60" />
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1">
+          <button className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-200 px-3 sm:px-4 py-2 rounded-xl hover:bg-gray-50 transition whitespace-nowrap">
+            This Month <ChevronDown className="w-3.5 h-3.5 opacity-60" />
           </button>
-          <button className="flex items-center gap-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition">
+          <button className="hidden sm:flex items-center gap-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition">
             <Download className="w-4 h-4" /> Export
           </button>
           {useCase === "subscriptions" && (
             <button
               onClick={runBilling}
               disabled={billingLoading}
-              className="flex items-center gap-2 text-sm font-semibold bg-[#8B5CF6] text-white px-5 py-2 rounded-xl hover:bg-purple-600 transition disabled:opacity-60 shadow-lg shadow-purple-200"
+              className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold bg-[#8B5CF6] text-white px-4 sm:px-5 py-2 rounded-xl hover:bg-purple-600 transition disabled:opacity-60 shadow-lg shadow-purple-200 whitespace-nowrap"
             >
               {billingLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               {billingLoading ? "Processing…" : "Run Payments"}
             </button>
           )}
           {useCase === "sales" && (
-            <a href="/pos" className="text-sm font-semibold bg-[#8B5CF6] text-white px-5 py-2 rounded-xl hover:bg-purple-600 transition shadow-lg shadow-purple-200">
+            <a href="/pos" className="text-xs sm:text-sm font-semibold bg-[#8B5CF6] text-white px-4 sm:px-5 py-2 rounded-xl hover:bg-purple-600 transition shadow-lg shadow-purple-200 whitespace-nowrap">
               + New Sale
             </a>
           )}
@@ -328,28 +328,28 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((card, i) => (
-          <div key={card.label} className={`dash-card rounded-2xl p-5 ${card.accent} shadow-sm`}>
-            <div className="flex items-center justify-between mb-3">
-              <p className={`text-xs font-semibold ${i === 0 ? "text-white/80" : "text-gray-400"}`}>
+          <div key={card.label} className={`dash-card rounded-2xl p-4 sm:p-5 ${card.accent} shadow-sm`}>
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <p className={`text-[10px] sm:text-xs font-semibold ${i === 0 ? "text-white/80" : "text-gray-400"}`}>
                 {card.label}
               </p>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${i === 0 ? card.iconBg : card.iconBg}`}>
+              <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center ${i === 0 ? card.iconBg : card.iconBg}`}>
                 {card.icon}
               </div>
             </div>
-            <p className={`text-2xl font-bold tracking-tight mb-2 ${i === 0 ? "text-white" : "text-gray-900"}`}>
+            <p className={`text-lg sm:text-2xl font-bold tracking-tight mb-1 sm:mb-2 truncate ${i === 0 ? "text-white" : "text-gray-900"}`}>
               {card.value}
             </p>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
               {card.change !== 0 && (
-                <span className={`flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full ${card.up ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}>
-                  {card.up ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                <span className={`flex items-center gap-0.5 text-[10px] sm:text-xs font-bold px-1 sm:px-1.5 py-0.5 rounded-full ${card.up ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}>
+                  {card.up ? <ArrowUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <ArrowDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                   {card.change > 0 ? "+" : ""}{card.change}%
                 </span>
               )}
-              <span className={`text-xs ${i === 0 ? "text-white/60" : "text-gray-400"}`}>{card.prev}</span>
+              <span className={`text-[10px] sm:text-xs ${i === 0 ? "text-white/60" : "text-gray-400"} truncate`}>{card.prev}</span>
             </div>
           </div>
         ))}
@@ -359,78 +359,80 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Performance Bar Chart */}
-        <div className="dash-card lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base font-bold text-gray-900">Performance Overview</h2>
-            <button className="flex items-center gap-1 text-sm text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition">
-              This Week <ChevronDown className="w-3.5 h-3.5" />
+        <div className="dash-card lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-sm sm:text-base font-bold text-gray-900">Performance Overview</h2>
+            <button className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 bg-gray-50 border border-gray-200 px-2 sm:px-3 py-1.5 rounded-xl hover:bg-gray-100 transition">
+              This Week <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} barGap={4} barCategoryGap="30%">
-              <CartesianGrid vertical={false} stroke="#f5f5f7" strokeDasharray="3 3" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => `${v/1000}k`} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-              <Bar dataKey="sales" radius={[8,8,8,8]} maxBarSize={36}>
-                {chartData.map((_, idx) => (
-                  <Cell
-                    key={idx}
-                    fill={idx === activeBar ? "#8B5CF6" : "#e5e7eb"}
-                    onClick={() => setActiveBar(idx === activeBar ? null : idx)}
-                    style={{ cursor: "pointer" }}
-                  />
-                ))}
-              </Bar>
-              <Bar dataKey="revenue" radius={[8,8,8,8]} maxBarSize={36}>
-                {chartData.map((_, idx) => (
-                  <Cell
-                    key={idx}
-                    fill={idx === activeBar ? "#7c3aed" : "#c4b5fd"}
-                    onClick={() => setActiveBar(idx === activeBar ? null : idx)}
-                    style={{ cursor: "pointer" }}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="-mx-2 sm:mx-0">
+            <ResponsiveContainer width="100%" height={180} minHeight={180}>
+              <BarChart data={chartData} barGap={4} barCategoryGap="30%" margin={{ left: -10, right: 0 }}>
+                <CartesianGrid vertical={false} stroke="#f5f5f7" strokeDasharray="3 3" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#9ca3af" }} tickFormatter={(v) => `${v/1000}k`} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+                <Bar dataKey="sales" radius={[6,6,6,6]} maxBarSize={28}>
+                  {chartData.map((_, idx) => (
+                    <Cell
+                      key={idx}
+                      fill={idx === activeBar ? "#8B5CF6" : "#e5e7eb"}
+                      onClick={() => setActiveBar(idx === activeBar ? null : idx)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  ))}
+                </Bar>
+                <Bar dataKey="revenue" radius={[6,6,6,6]} maxBarSize={28}>
+                  {chartData.map((_, idx) => (
+                    <Cell
+                      key={idx}
+                      fill={idx === activeBar ? "#7c3aed" : "#c4b5fd"}
+                      onClick={() => setActiveBar(idx === activeBar ? null : idx)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Sales Growth Gauge */}
-        <div className="dash-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
+        <div className="dash-card bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-900">Sales Overview</h2>
+            <h2 className="text-sm sm:text-base font-bold text-gray-900">Sales Overview</h2>
             <button className="text-gray-400 hover:text-gray-600">
-              <MoreHorizontal className="w-5 h-5" />
+              <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center scale-[0.85] sm:scale-100 origin-top">
             <GaugeChart value={isSales ? 0 : (s?.success_rate ?? 0)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
             <div>
-              <p className="text-xs text-gray-400 font-medium mb-1">
+              <p className="text-[10px] sm:text-xs text-gray-400 font-medium mb-1">
                 {isSales ? "Number of Sales" : "Subscribers"}
               </p>
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-base sm:text-xl font-bold text-gray-900">
                 {isSales ? (posStats?.total_sales ?? "—") : (s?.total_subscribers ?? "—")}
               </p>
               {!isSales && s && s.subscribers_change_pct !== 0 && (
-                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
-                  <ArrowUp className="w-3 h-3" />{s.subscribers_change_pct}%
+                <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
+                  <ArrowUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{s.subscribers_change_pct}%
                 </span>
               )}
             </div>
             <div>
-              <p className="text-xs text-gray-400 font-medium mb-1">Total Revenue</p>
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-[10px] sm:text-xs text-gray-400 font-medium mb-1">Total Revenue</p>
+              <p className="text-base sm:text-xl font-bold text-gray-900">
                 {revenueVal ? `${(revenueVal / 1000).toFixed(1)}k XAF` : "—"}
               </p>
               {!isSales && s && s.revenue_change_pct !== 0 && (
-                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
-                  <ArrowUp className="w-3 h-3" />{s.revenue_change_pct}%
+                <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
+                  <ArrowUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{s.revenue_change_pct}%
                 </span>
               )}
             </div>
@@ -439,10 +441,10 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Orders Table */}
-      <div className="dash-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Recent orders</h2>
-          <div className="flex items-center gap-3">
+      <div className="dash-card bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900">Recent orders</h2>
+          <div className="hidden sm:flex items-center gap-3">
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
               <Search className="w-4 h-4 text-gray-400" />
               <input
@@ -456,16 +458,17 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
-              <th className="text-left px-6 py-3 w-8"><input type="checkbox" className="rounded" /></th>
-              <th className="text-left px-3 py-3">Order ID</th>
-              <th className="text-left px-3 py-3">Customer</th>
-              <th className="text-left px-3 py-3">Date</th>
-              <th className="text-left px-3 py-3">Category</th>
-              <th className="text-left px-3 py-3">Status</th>
-              <th className="text-right px-6 py-3">Total</th>
+              <th className="text-left px-2 sm:px-3 py-3 hidden sm:table-cell"><input type="checkbox" className="rounded" /></th>
+              <th className="text-left px-2 sm:px-3 py-3 hidden sm:table-cell">Order ID</th>
+              <th className="text-left px-2 sm:px-3 py-3">Customer</th>
+              <th className="text-left px-2 sm:px-3 py-3 hidden md:table-cell">Date</th>
+              <th className="text-left px-2 sm:px-3 py-3 hidden lg:table-cell">Category</th>
+              <th className="text-left px-2 sm:px-3 py-3">Status</th>
+              <th className="text-right px-3 sm:px-6 py-3">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -474,24 +477,25 @@ export default function Dashboard() {
             )}
             {displayOrders.map((order, i) => (
               <tr key={order.id + i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-3.5"><input type="checkbox" className="rounded" /></td>
-                <td className="px-3 py-3.5 font-mono text-xs font-semibold text-gray-500">#{order.id}</td>
-                <td className="px-3 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <td className="px-2 sm:px-3 py-3 hidden sm:table-cell"><input type="checkbox" className="rounded" /></td>
+                <td className="px-2 sm:px-3 py-3 font-mono text-xs font-semibold text-gray-500 hidden sm:table-cell">#{order.id}</td>
+                <td className="px-2 sm:px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shrink-0">
                       {order.customer.charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-medium text-gray-800">{order.customer}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 truncate max-w-[100px] sm:max-w-none">{order.customer}</span>
                   </div>
                 </td>
-                <td className="px-3 py-3.5 text-gray-400">{order.date}</td>
-                <td className="px-3 py-3.5 text-gray-500">{order.category}</td>
-                <td className="px-3 py-3.5"><StatusBadge status={order.status} /></td>
-                <td className="px-6 py-3.5 text-right font-semibold text-gray-900">{order.amount.toLocaleString()} XAF</td>
+                <td className="px-2 sm:px-3 py-3 text-gray-400 text-xs hidden md:table-cell">{order.date}</td>
+                <td className="px-2 sm:px-3 py-3 text-gray-500 text-xs hidden lg:table-cell">{order.category}</td>
+                <td className="px-2 sm:px-3 py-3"><StatusBadge status={order.status} /></td>
+                <td className="px-3 sm:px-6 py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">{order.amount.toLocaleString()} XAF</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
     </div>

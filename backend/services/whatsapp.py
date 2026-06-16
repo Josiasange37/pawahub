@@ -18,7 +18,7 @@ async def send_whatsapp(phone: str, message: str, sme_id: str = "") -> bool:
             return resp.status_code == 200
     except Exception as e:
         print(f"WhatsApp failed (bot not connected): {e}")
-        return True
+        return False
 
 
 def payment_reminder_msg(business_name: str, amount: int, due_date: str) -> str:
