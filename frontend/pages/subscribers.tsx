@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, getToken } from "../lib/api";
-import { SkeletonTable } from "../components/Skeleton";
 import { showToast } from "../components/Toast";
+import { Users, Plus, X, Search, Zap, UserX, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 
 interface Subscriber {
   id: string;
@@ -20,6 +20,19 @@ interface Plan {
   is_active?: boolean;
 }
 
+const inputCls = "w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#8B5CF6]/20 focus:border-[#8B5CF6] transition placeholder:text-gray-400";
+
+function StatusBadge({ active }: { active: boolean }) {
+  return (
+    <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+      active ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-gray-100 text-gray-500 border-gray-200"
+    }`}>
+      {active ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+      {active ? "Active" : "Inactive"}
+    </span>
+  );
+}
+
 export default function Subscribers() {
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -29,15 +42,13 @@ export default function Subscribers() {
   const [saving, setSaving] = useState(false);
   const [charging, setCharging] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const load = () => {
     const token = getToken();
     if (!token) return;
     setLoading(true);
-    Promise.all([
-      api("/api/subscribers", { token }),
-      api("/api/plans", { token }),
-    ])
+    Promise.all([api("/api/subscribers", { token }), api("/api/plans", { token })])
       .then(([s, p]) => { setSubs(s); setPlans(p); })
       .catch((e) => showToast(e.message, "error"))
       .finally(() => setLoading(false));
@@ -84,101 +95,193 @@ export default function Subscribers() {
     }
   };
 
+  const filtered = subs.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.phone.includes(search) ||
+    (s.email || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Subscribers</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition">
-          {showForm ? "Cancel" : "+ Add Subscriber"}
+    <div className="p-6 space-y-6">
+
+      {/* Confirm Deactivate Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <UserX className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Deactivate Subscriber?</h3>
+            <p className="text-gray-500 text-sm mb-6">This subscriber will stop receiving payment notifications.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+              <button onClick={() => deactivate(confirmDelete)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition">Deactivate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Subscribers</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{subs.length} total · {subs.filter(s => s.is_active).length} active</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-md ${
+            showForm ? "bg-gray-100 text-gray-700" : "bg-[#8B5CF6] text-white hover:bg-purple-600 shadow-purple-200"
+          }`}
+        >
+          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {showForm ? "Cancel" : "Add Subscriber"}
         </button>
       </div>
 
+      {/* Add Form */}
       {showForm && (
-        <form onSubmit={addSub} className="bg-white p-6 rounded-xl border border-gray-200 mb-6 shadow-sm">
-          <h3 className="font-semibold mb-4">Add New Subscriber</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" required />
-            <input placeholder="Phone (237xxxxxxxxx)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" required />
-            <input type="email" placeholder="Email (for receipt)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
-            <select value={form.plan_id} onChange={(e) => setForm({ ...form, plan_id: e.target.value })} className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" required>
-              <option value="">Select Plan</option>
-              {plans.filter((p) => p.is_active !== false).map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.amount.toLocaleString()} XAF)</option>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-5">Add New Subscriber</h3>
+          <form onSubmit={addSub} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Full Name</label>
+                <input className={inputCls} placeholder="e.g. Amina Diallo" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Phone (237xxxxxxxxx)</label>
+                <input className={inputCls} placeholder="237650000000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Email (optional)</label>
+                <input className={inputCls} type="email" placeholder="email@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Subscription Plan</label>
+                <div className="relative">
+                  <select value={form.plan_id} onChange={(e) => setForm({ ...form, plan_id: e.target.value })} className={`${inputCls} pr-10 appearance-none`} required>
+                    <option value="">Select a plan…</option>
+                    {plans.filter(p => p.is_active !== false).map(p => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.amount.toLocaleString()} XAF</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="submit" disabled={saving} className="flex items-center gap-2 bg-[#8B5CF6] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 transition">
+                {saving && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
+                {saving ? "Adding…" : "Add Subscriber"}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Table Card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Table Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-900">All Subscribers</h2>
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input
+              className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-40"
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="space-y-px">
+            {[1,2,3,4,5].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse mx-6 my-2 rounded-xl" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users className="w-7 h-7 text-[#8B5CF6]" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">{search ? "No results" : "No subscribers yet"}</h3>
+            <p className="text-gray-400 text-sm mb-5">{search ? "Try a different search term." : "Add your first subscriber to start collecting payments."}</p>
+            {!search && (
+              <button onClick={() => setShowForm(true)} className="bg-[#8B5CF6] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-600 transition">
+                Add First Subscriber
+              </button>
+            )}
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
+                <th className="text-left px-6 py-3">Subscriber</th>
+                <th className="text-left px-4 py-3">Phone</th>
+                <th className="text-left px-4 py-3">Plan</th>
+                <th className="text-left px-4 py-3">Status</th>
+                <th className="text-right px-6 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((sub) => (
+                <tr key={sub.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                  <td className="px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {sub.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">{sub.name}</p>
+                        {sub.email && <p className="text-xs text-gray-400">{sub.email}</p>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5 text-gray-500 font-mono text-xs">{sub.phone}</td>
+                  <td className="px-4 py-3.5">
+                    {planMap[sub.plan_id] ? (
+                      <span className="text-xs bg-purple-50 text-[#8B5CF6] font-semibold px-2.5 py-1 rounded-lg">
+                        {planMap[sub.plan_id].name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5"><StatusBadge active={sub.is_active} /></td>
+                  <td className="px-6 py-3.5">
+                    <div className="flex items-center gap-2 justify-end">
+                      {sub.is_active && (
+                        <button
+                          onClick={() => chargeNow(sub.id)}
+                          disabled={charging === sub.id}
+                          className="flex items-center gap-1.5 text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition"
+                        >
+                          {charging === sub.id
+                            ? <span className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
+                            : <Zap className="w-3 h-3" />
+                          }
+                          {charging === sub.id ? "Charging…" : "Charge"}
+                        </button>
+                      )}
+                      {sub.is_active && (
+                        <button
+                          onClick={() => setConfirmDelete(sub.id)}
+                          className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition"
+                        >
+                          Deactivate
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </select>
-          </div>
-          <div className="flex gap-3 mt-4">
-            <button type="submit" disabled={saving} className="bg-primary-600 text-white px-6 py-2.5 rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2 transition">
-              {saving && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
-              {saving ? "Adding..." : "Add Subscriber"}
-            </button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">Cancel</button>
-          </div>
-        </form>
-      )}
-
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-semibold text-lg mb-2">Deactivate Subscriber?</h3>
-            <p className="text-gray-500 text-sm mb-6">This subscriber will stop receiving payment notifications.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition">Cancel</button>
-              <button onClick={() => deactivate(confirmDelete)} className="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700 transition">Deactivate</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <SkeletonTable rows={5} />
-      ) : subs.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">👥</span>
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">No subscribers yet</h3>
-          <p className="text-gray-500 text-sm mb-4">Add your first subscriber to start collecting payments.</p>
-          <button onClick={() => setShowForm(true)} className="bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition">
-            Add Your First Subscriber
-          </button>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200">
-          {subs.map((sub) => (
-            <div key={sub.id} className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center font-semibold text-sm">
-                  {sub.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-medium">{sub.name}</p>
-                  <p className="text-sm text-gray-500">{sub.phone}</p>
-                  {sub.email && <p className="text-xs text-gray-400">{sub.email}</p>}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded-full ${sub.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                  {sub.is_active ? "Active" : "Inactive"}
-                </span>
-                {sub.is_active && (
-                  <>
-                    <button
-                      onClick={() => chargeNow(sub.id)}
-                      disabled={charging === sub.id}
-                      className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-1 transition"
-                    >
-                      {charging === sub.id && <span className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />}
-                      {charging === sub.id ? "Charging..." : "Charge Now"}
-                    </button>
-                    <button onClick={() => setConfirmDelete(sub.id)} className="text-xs text-red-500 hover:text-red-700 transition">Deactivate</button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

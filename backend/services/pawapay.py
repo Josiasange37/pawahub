@@ -38,7 +38,7 @@ async def initiate_deposit(
             "countryCode": "CMR",
         },
         "customerTimestamp": reference,
-        "statementDescription": "PawaSub subscription",
+        "statementDescription": "Fluxpay subscription",
         "customerMessage": "Subscription payment",
     }
     async with httpx.AsyncClient(timeout=30) as client:

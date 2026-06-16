@@ -29,6 +29,7 @@ async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, d
     deposit_id = body.get("depositId")
     status = body.get("status")
     if deposit_id and status:
+        # Check if it's a subscription transaction
         tx = db.table("transactions").select("cycle_id").eq("pawapay_deposit_id", deposit_id).execute()
         cycle_id = tx.data[0]["cycle_id"] if tx.data else None
 
@@ -36,6 +37,15 @@ async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, d
             background_tasks.add_task(complete_payment, cycle_id, deposit_id)
         elif status in ("FAILED", "DECLINED", "EXPIRED") and cycle_id:
             background_tasks.add_task(fail_payment, cycle_id, deposit_id, status)
+
+        # Check if it's a POS sale
+        pos_sale = db.table("pos_sales").select("id").eq("pawapay_deposit_id", deposit_id).execute()
+        if pos_sale.data:
+            sale_id = pos_sale.data[0]["id"]
+            if status == "COMPLETED":
+                db.table("pos_sales").update({"payment_status": "completed"}).eq("id", sale_id).execute()
+            elif status in ("FAILED", "DECLINED", "EXPIRED"):
+                db.table("pos_sales").update({"payment_status": "failed"}).eq("id", sale_id).execute()
 
     return {"status": "received"}
 

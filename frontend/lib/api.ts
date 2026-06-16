@@ -20,7 +20,8 @@ export async function api(path: string, options: RequestOptions = {}) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || "Request failed");
+    const detail = Array.isArray(err.detail) ? err.detail.map((e: any) => e.msg).join("; ") : err.detail;
+    throw new Error(detail || "Request failed");
   }
   return res.json();
 }
@@ -47,4 +48,15 @@ export function getSme(): any | null {
 
 export function setSme(sme: any) {
   localStorage.setItem("sme", JSON.stringify(sme));
+}
+
+export function getPreferencesFallback(smeId: string): any {
+  if (typeof window === "undefined") return null;
+  const data = localStorage.getItem(`prefs_${smeId}`);
+  return data ? JSON.parse(data) : null;
+}
+
+export function setPreferencesFallback(smeId: string, prefs: any) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`prefs_${smeId}`, JSON.stringify(prefs));
 }

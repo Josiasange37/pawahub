@@ -18,6 +18,7 @@ async def register(body: SMERegister, db: Client = Depends(get_db)):
         "password_hash": hash_password(body.password),
         "business_name": body.business_name,
         "phone": body.phone,
+        "business_type": body.business_type,
     }).execute()
 
     if not sme.data:

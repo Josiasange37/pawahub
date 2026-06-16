@@ -79,6 +79,7 @@ TABLES = {
         "name": "text not null",
         "description": "text",
         "price": "integer not null",
+        "stock": "integer default 0",
         "currency": "text default 'XAF'",
         "is_active": "boolean default true",
         "created_at": "timestamptz default now()",

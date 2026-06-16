@@ -2,21 +2,22 @@ from config import settings
 import httpx
 
 
-async def send_whatsapp(phone: str, message: str) -> bool:
+async def send_whatsapp(phone: str, message: str, sme_id: str = "") -> bool:
     print(f"\n{'='*50}")
-    print(f"💬 WHATSAPP NOTIFICATION")
+    print(f" WhatsApp NOTIFICATION")
     print(f"  To:      {phone}")
+    print(f"  SME:     {sme_id}")
     print(f"  Message: {message}")
     print(f"{'='*50}\n")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
                 f"{settings.baileys_bot_url}/send",
-                json={"phone": phone, "message": message},
+                json={"phone": phone, "message": message, "sme_id": sme_id},
             )
             return resp.status_code == 200
     except Exception as e:
-        print(f"❌ WhatsApp failed (bot not connected): {e}")
+        print(f"WhatsApp failed (bot not connected): {e}")
         return True
 
 

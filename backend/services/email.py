@@ -25,7 +25,7 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
                     "Content-Type": "application/json",
                 },
                 json={
-                    "from": "PawaSub <noreply@almight.me>",
+                    "from": "Fluxpay <noreply@almight.me>",
                     "to": [to],
                     "subject": subject,
                     "html": html,
@@ -45,7 +45,7 @@ async def send_email(to: str, subject: str, html: str, tag: str = "owner") -> bo
 def payment_receipt_email(business_name: str, subscriber_name: str, amount: int, plan_name: str) -> str:
     return f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1a56db;">PawaSub Payment Receipt</h2>
+        <h2 style="color: #1a56db;">Fluxpay Payment Receipt</h2>
         <p><strong>{business_name}</strong></p>
         <hr>
         <p><strong>Subscriber:</strong> {subscriber_name}</p>
@@ -53,7 +53,7 @@ def payment_receipt_email(business_name: str, subscriber_name: str, amount: int,
         <p><strong>Amount:</strong> {amount:,} XAF</p>
         <p><strong>Status:</strong> ✅ Paid</p>
         <hr>
-        <p style="color: #666; font-size: 12px;">Powered by PawaSub & pawaPay</p>
+        <p style="color: #666; font-size: 12px;">Powered by Fluxpay & pawaPay</p>
     </div>
     """
 
@@ -69,6 +69,6 @@ def payment_failed_email(business_name: str, subscriber_name: str, amount: int, 
         <p><strong>Amount:</strong> {amount:,} XAF</p>
         <p><strong>Reason:</strong> {reason}</p>
         <hr>
-        <p style="color: #666; font-size: 12px;">Powered by PawaSub & pawaPay</p>
+        <p style="color: #666; font-size: 12px;">Powered by Fluxpay & pawaPay</p>
     </div>
     """

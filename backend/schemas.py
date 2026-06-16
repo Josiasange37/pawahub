@@ -12,6 +12,7 @@ class SMEBase(BaseModel):
 
 class SMERegister(SMEBase):
     password: str
+    business_type: str = "solo"
 
 
 class SMELogin(BaseModel):
@@ -21,6 +22,7 @@ class SMELogin(BaseModel):
 
 class SMEOut(SMEBase):
     id: UUID
+    business_type: str = "solo"
     created_at: datetime
 
 
@@ -133,12 +135,14 @@ class ProductCreate(BaseModel):
     name: str
     description: Optional[str] = None
     price: int
+    stock: Optional[int] = 0
 
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[int] = None
+    stock: Optional[int] = None
     is_active: Optional[bool] = None
 
 
@@ -148,6 +152,7 @@ class ProductOut(BaseModel):
     name: str
     description: Optional[str]
     price: int
+    stock: Optional[int] = 0
     currency: str = "XAF"
     is_active: bool
     created_at: datetime
@@ -156,6 +161,7 @@ class ProductOut(BaseModel):
 class SaleItemInput(BaseModel):
     product_id: UUID
     quantity: int
+    price: Optional[int] = None
 
 
 class SaleCreate(BaseModel):

@@ -6,8 +6,9 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_anon_key: str
     supabase_service_key: str
+    supabase_db_password: str = ""
     resend_api_key: str
-    jwt_secret: str = "pawasub-jwt-secret-hackathon-2026"
+    jwt_secret: str = "fluxpay-jwt-secret-hackathon-2026"
     pawapay_base_url: str = "https://api.sandbox.pawapay.io"
     baileys_bot_url: str = "https://zooming-bravery-production-f6f7.up.railway.app"
     gmail_address: str = ""

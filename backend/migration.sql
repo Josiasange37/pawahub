@@ -78,3 +78,61 @@ CREATE INDEX IF NOT EXISTS idx_payment_cycles_subscriber_id ON payment_cycles(su
 CREATE INDEX IF NOT EXISTS idx_payment_cycles_status ON payment_cycles(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_sme_id ON transactions(sme_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_pawapay_deposit_id ON transactions(pawapay_deposit_id);
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    sme_id UUID REFERENCES smes(id) UNIQUE NOT NULL,
+    business_type TEXT DEFAULT 'solo',
+    use_case TEXT DEFAULT 'subscriptions',
+    onboarding_complete BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    sme_id UUID REFERENCES smes(id) NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    price INTEGER NOT NULL,
+    stock INTEGER DEFAULT 0,
+    currency TEXT DEFAULT 'XAF',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS pos_sales (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    sme_id UUID REFERENCES smes(id) NOT NULL,
+    customer_name TEXT,
+    customer_phone TEXT,
+    total_amount INTEGER NOT NULL,
+    currency TEXT DEFAULT 'XAF',
+    payment_method TEXT DEFAULT 'momo',
+    payment_status TEXT DEFAULT 'pending',
+    pawapay_deposit_id TEXT,
+    receipt_number TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS pos_sale_items (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    sale_id UUID REFERENCES pos_sales(id) NOT NULL,
+    product_id UUID REFERENCES products(id) NOT NULL,
+    product_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price INTEGER NOT NULL,
+    subtotal INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_preferences_sme_id ON user_preferences(sme_id);
+CREATE INDEX IF NOT EXISTS idx_products_sme_id ON products(sme_id);
+CREATE INDEX IF NOT EXISTS idx_pos_sales_sme_id ON pos_sales(sme_id);
+CREATE INDEX IF NOT EXISTS idx_pos_sale_items_sale_id ON pos_sale_items(sale_id);
+
+ALTER TABLE smes ADD COLUMN IF NOT EXISTS business_type TEXT DEFAULT 'solo';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0;
+
+-- Enable RLS on user_preferences; backend uses service_role (bypasses RLS)
+-- so only anon/authenticated direct API access is blocked, not server-side queries.
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+

@@ -50,3 +50,19 @@ def get_current_sme(
     if not result.data:
         raise HTTPException(status_code=401, detail="SME not found")
     return result.data[0]
+
+
+def get_sme_from_token(token: str, db: Client) -> dict:
+    try:
+        from config import settings
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
+        sme_id = payload.get("sub")
+        if sme_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    result = db.table("smes").select("*").eq("id", sme_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=401, detail="SME not found")
+    return result.data[0]

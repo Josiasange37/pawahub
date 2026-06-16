@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from routers import auth, plans, subscribers, billing, webhooks, dashboard, preferences, products, pos
@@ -16,7 +18,7 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
-app = FastAPI(title="PawaSub API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Fluxpay API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,12 +44,63 @@ app.include_router(pos.router)
 
 @app.get("/")
 async def root():
-    return {"message": "PawaSub API running", "status": "ok"}
+    return {"message": "Fluxpay API running", "status": "ok"}
 
 
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+from pydantic import BaseModel
+
+
+class MigrateRequest(BaseModel):
+    db_password: str | None = None
+
+
+@app.post("/api/migrate")
+async def run_migration(body: MigrateRequest):
+    try:
+        import pg8000
+        from config import settings
+
+        project_ref = settings.supabase_url.split("//")[1].split(".")[0]
+        host = "aws-0-eu-west-1.pooler.supabase.com"
+
+        db_password = body.db_password or os.environ.get("SUPABASE_DB_PASSWORD")
+        if not db_password:
+            raise HTTPException(
+                status_code=400,
+                detail="DB password required. Pass `db_password` in body or set SUPABASE_DB_PASSWORD env var.",
+            )
+
+        import socket
+        ip = socket.getaddrinfo(host, 6543, socket.AF_INET)[0][4][0]
+
+        conn = pg8000.connect(
+            host=ip,
+            port=6543,
+            database="postgres",
+            user=f"postgres.{project_ref}",
+            password=db_password,
+            timeout=5,
+        )
+        cur = conn.cursor()
+
+        with open("migration.sql") as f:
+            sql = f.read()
+
+        cur.execute(sql)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"message": "Migration completed successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)[:200]}")
 
 
 @app.get("/test-email")
@@ -61,7 +114,7 @@ async def test_email():
     try:
         sent = await send_email(
             settings.gmail_address or "test@test.com",
-            "PawaSub Test Email",
+            "Fluxpay Test Email",
             "<h1>Test</h1><p>If you see this, Resend is working!</p>",
         )
         result["send_result"] = sent
