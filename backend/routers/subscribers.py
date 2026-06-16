@@ -54,6 +54,15 @@ async def get_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sm
 
 
 @router.delete("/{subscriber_id}")
+async def delete_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    db.table("payment_cycles").delete().eq("subscriber_id", str(subscriber_id)).execute()
+    db.table("transactions").delete().eq("subscriber_id", str(subscriber_id)).execute()
+    result = db.table("subscribers").delete().eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+    return {"message": "Subscriber deleted"}
+
+@router.delete("/{subscriber_id}/soft")
 async def deactivate_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     result = db.table("subscribers").update({"is_active": False}).eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
     if not result.data:

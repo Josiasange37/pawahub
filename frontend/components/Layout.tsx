@@ -85,14 +85,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { label: "Point of Sale",href: "/pos",                 icon: ShoppingCart },
         { label: "Products",     href: "/products",            icon: Package },
         { label: "Sales History",href: "/sales",               icon: History },
-        { label: "WhatsApp",     href: "/onboarding?step=2",   icon: MessageCircle, dot: whatsappConnected },
+        { label: "WhatsApp",     href: "/whatsapp",            icon: MessageCircle, dot: whatsappConnected },
       ]
     : [
         { label: "Dashboard",    href: "/",                    icon: LayoutDashboard },
         { label: "Plans",        href: "/plans",               icon: FileText },
         { label: "Subscribers",  href: "/subscribers",         icon: Users },
         { label: "Transactions", href: "/transactions",        icon: CreditCard },
-        { label: "WhatsApp",     href: "/onboarding?step=2",   icon: MessageCircle, dot: whatsappConnected },
+        { label: "WhatsApp",     href: "/whatsapp",            icon: MessageCircle, dot: whatsappConnected },
       ];
 
   const handleLogout = () => { removeToken(); router.push("/login"); };
@@ -139,7 +139,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Bottom */}
       <div className="px-3 pb-6 mt-4 space-y-0.5 border-t border-gray-100 pt-4">
         <button
-          onClick={() => router.push("/onboarding")}
+          onClick={() => router.push("/settings")}
           className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition flex items-center gap-3"
         >
           <Settings className="w-4 h-4" />
@@ -223,7 +223,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Settings */}
             <button
-              onClick={() => router.push("/onboarding")}
+              onClick={() => router.push("/settings")}
               className="w-9 h-9 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
             >
               <Settings className="w-4 h-4" />
