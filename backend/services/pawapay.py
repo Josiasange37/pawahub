@@ -32,18 +32,18 @@ async def initiate_deposit(
         "depositId": reference,
         "amount": str(amount),
         "currency": "XAF",
-        "correspondent": provider,
-        "customer": {
-            "phoneNumber": phone,
-            "countryCode": "CMR",
+        "payer": {
+            "type": "MMO",
+            "accountDetails": {
+                "phoneNumber": phone,
+                "provider": provider,
+            },
         },
-        "customerTimestamp": reference,
-        "statementDescription": "Fluxpay subscription",
         "customerMessage": "Subscription payment",
     }
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            f"{settings.pawapay_base_url}/deposits",
+            f"{settings.pawapay_base_url}/v2/deposits",
             headers=headers,
             json=payload,
         )
@@ -62,10 +62,11 @@ async def check_deposit_status(deposit_id: str) -> dict:
     headers = {"Authorization": f"Bearer {settings.pawapay_api_token}"}
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(
-            f"{settings.pawapay_base_url}/deposits/{deposit_id}",
+            f"{settings.pawapay_base_url}/v2/deposits/{deposit_id}",
             headers=headers,
         )
         if resp.status_code == 200:
             data = resp.json()
-            return {"success": True, "status": data.get("status"), "data": data}
+            inner = data.get("data", {}) or {}
+            return {"success": True, "status": inner.get("status") or data.get("status"), "data": inner}
         return {"success": False, "error": resp.text}
