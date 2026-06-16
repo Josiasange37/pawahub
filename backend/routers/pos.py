@@ -126,12 +126,11 @@ async def charge_sale(sale_id: str, sme: dict = Depends(get_current_sme), db: Cl
             reference=deposit_ref,
         )
         if not deposit.get("success", False):
-            # Demo/Offline mode fallback: auto-complete if not in real environment
             db.table("pos_sales").update({
-                "payment_status": "completed",
+                "payment_status": "failed",
                 "pawapay_deposit_id": deposit_ref,
             }).eq("id", sale_id).execute()
-            return {"message": "Payment initiated (Demo Mode Auto-Complete)", "deposit_id": deposit_ref, "status": "completed"}
+            raise HTTPException(status_code=502, detail=f"Payment provider error: {deposit.get('error', 'unknown')}")
 
         db.table("pos_sales").update({
             "payment_status": "processing",

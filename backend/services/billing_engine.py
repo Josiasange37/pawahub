@@ -50,9 +50,8 @@ async def initiate_payment(cycle_id: str):
     transaction_id = tx.data[0]["id"] if tx.data else None
 
     if not result["success"]:
-        # Demo mode: auto-complete even if sandbox rejected the real number
-        await complete_payment(cycle_id, deposit_ref, plan.get("interval_days", 30))
-        return {"deposit_id": deposit_ref, "transaction_id": transaction_id, "status": "demo_completed"}
+        await fail_payment(cycle_id, deposit_ref)
+        return {"deposit_id": deposit_ref, "transaction_id": transaction_id, "status": "failed", "error": result.get("error")}
 
     asyncio.create_task(_poll_fallback(deposit_ref, transaction_id, cycle_id, plan.get("interval_days", 30)))
 
@@ -127,20 +126,23 @@ async def fail_payment(cycle_id: str, deposit_id: str, pawapay_status: str = "FA
 
 
 async def _poll_fallback(deposit_id: str, transaction_id: str, cycle_id: str, interval_days: int):
-    await asyncio.sleep(180)
-    db = get_db()
-    if transaction_id:
-        tx = db.table("transactions").select("status").eq("id", transaction_id).execute()
-        if tx.data and tx.data[0]["status"] != "pending":
-            return
+    for attempt in range(12):
+        await asyncio.sleep(30)
+        db = get_db()
+        if transaction_id:
+            tx = db.table("transactions").select("status").eq("id", transaction_id).execute()
+            if tx.data and tx.data[0]["status"] != "pending":
+                return
 
-    status = await check_deposit_status(deposit_id)
-    if status["success"]:
-        s = status["status"]
-        if s == "COMPLETED":
-            await complete_payment(cycle_id, deposit_id, interval_days)
-        elif s in ("FAILED", "DECLINED", "EXPIRED"):
-            await fail_payment(cycle_id, deposit_id, s)
+        status = await check_deposit_status(deposit_id)
+        if status["success"]:
+            s = status["status"]
+            if s == "COMPLETED":
+                await complete_payment(cycle_id, deposit_id, interval_days)
+                return
+            elif s in ("FAILED", "DECLINED", "EXPIRED"):
+                await fail_payment(cycle_id, deposit_id, s)
+                return
 
 
 async def run_daily_billing():
