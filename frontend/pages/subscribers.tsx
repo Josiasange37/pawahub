@@ -86,8 +86,8 @@ export default function Subscribers() {
   const chargeNow = async (id: string) => {
     setCharging(id);
     try {
-      const res = await api(`/api/billing/charge/${id}`, { method: "POST", token: getToken()! });
-      showToast(`${res.amount.toLocaleString()} XAF payment initiated`, "success");
+    const res = await api(`/api/billing/charge/${id}`, { method: "POST", token: getToken()! });
+    showToast(`${res.amount.toLocaleString()} XAF - ${res.status || "processing"}`, res.status === "failed" ? "error" : "success");
     } catch (e: any) {
       showToast(e.message, "error");
     } finally {

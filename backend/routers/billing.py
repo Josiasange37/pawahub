@@ -43,7 +43,7 @@ async def trigger_billing(background_tasks: BackgroundTasks, sme: dict = Depends
 
 
 @router.post("/charge/{subscriber_id}")
-async def charge_subscriber(subscriber_id: UUID, background_tasks: BackgroundTasks, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+async def charge_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     sub = db.table("subscribers").select("*").eq("id", str(subscriber_id)).eq("sme_id", sme["id"]).execute()
     if not sub.data:
         raise HTTPException(status_code=404, detail="Subscriber not found")
@@ -65,9 +65,9 @@ async def charge_subscriber(subscriber_id: UUID, background_tasks: BackgroundTas
     }).execute()
 
     cycle_id = cycle.data[0]["id"]
-    background_tasks.add_task(initiate_payment, cycle_id)
+    result = await initiate_payment(cycle_id)
 
-    return {"message": "Payment initiated", "cycle_id": cycle_id, "amount": plan_data["amount"]}
+    return {"message": result.get("status", "processing"), "cycle_id": cycle_id, "amount": plan_data["amount"], "status": result.get("status")}
 
 
 @router.get("/transactions", response_model=list[TransactionOut])
