@@ -14,6 +14,22 @@ import {
 
 gsap.registerPlugin(useGSAP);
 
+interface MonthlyPoint {
+  month: string;
+  sales: number;
+  revenue: number;
+}
+
+interface RecentOrder {
+  id: string;
+  customer: string;
+  phone: string;
+  date: string;
+  category: string;
+  status: string;
+  amount: number;
+}
+
 interface Stats {
   total_subscribers: number;
   active_subscribers: number;
@@ -22,6 +38,22 @@ interface Stats {
   pending_payments: number;
   failed_payments: number;
   success_rate: number;
+
+  prev_total_subscribers: number;
+  subscribers_change_pct: number;
+
+  new_subscribers: number;
+  prev_new_subscribers: number;
+  new_subscribers_change_pct: number;
+
+  prev_monthly_revenue: number;
+  revenue_change_pct: number;
+
+  prev_pending_payments: number;
+  pending_change_pct: number;
+
+  monthly_chart: MonthlyPoint[];
+  recent_orders: RecentOrder[];
 }
 
 interface POSStats {
@@ -30,25 +62,6 @@ interface POSStats {
   pending_payments: number;
   active_products: number;
 }
-
-// Mock chart data — replace with real API data as needed
-const monthlyData = [
-  { month: "May",  sales: 18000, revenue: 14000 },
-  { month: "Jun",  sales: 22000, revenue: 18000 },
-  { month: "Jul",  sales: 19000, revenue: 15000 },
-  { month: "Aug",  sales: 38000, revenue: 32000 },
-  { month: "Sep",  sales: 16000, revenue: 12000 },
-  { month: "Oct",  sales: 21000, revenue: 17000 },
-  { month: "Nov",  sales: 14000, revenue: 11000 },
-  { month: "Dec",  sales: 25000, revenue: 20000 },
-];
-
-const recentOrders = [
-  { id: "#FP-9021", customer: "Amina Diallo",    date: "2 Jun 2026", category: "Abonnement",  status: "Pending",   amount: "12 500 XAF" },
-  { id: "#FP-9020", customer: "Koffi Mensah",    date: "1 Jun 2026", category: "Vente POS",   status: "Completed", amount: "7 800 XAF"  },
-  { id: "#FP-9019", customer: "Fatou Ndiaye",    date: "31 Mai 2026", category: "Abonnement", status: "Completed", amount: "5 000 XAF"  },
-  { id: "#FP-9018", customer: "Jean-Paul Biya",  date: "30 Mai 2026", category: "Vente POS",  status: "Failed",    amount: "3 200 XAF"  },
-];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -115,13 +128,13 @@ function GaugeChart({ value }: { value: number }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    Pending:   "bg-yellow-50 text-yellow-600 border border-yellow-200",
-    Completed: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-    Failed:    "bg-red-50 text-red-500 border border-red-200",
-  };
+  const s = status?.toLowerCase() ?? "";
+  let cls = "bg-gray-100 text-gray-600 border border-gray-200";
+  if (s === "pending" || s === "retrying") cls = "bg-yellow-50 text-yellow-600 border border-yellow-200";
+  else if (s === "completed" || s === "paid" || s === "success") cls = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+  else if (s === "failed" || s === "timeout") cls = "bg-red-50 text-red-500 border border-red-200";
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? "bg-gray-100 text-gray-600"}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${cls}`}>
       {status}
     </span>
   );
@@ -198,50 +211,67 @@ export default function Dashboard() {
     }
   };
 
-  // Derived stats
-  const totalSales = useCase === "sales" ? posStats?.total_sales : stats?.total_subscribers;
-  const revenue = useCase === "sales" ? posStats?.total_revenue : stats?.total_revenue;
-  const activeCount = useCase === "sales" ? posStats?.active_products : stats?.active_subscribers;
-  const successRate = stats?.success_rate ?? (posStats ? 70.8 : 0);
-  const monthlyRev = stats?.monthly_revenue ?? 0;
+  const isSales = useCase === "sales";
+  const s = stats;
+
+  const card1 = isSales
+    ? { label: "Total Sales", value: String(posStats?.total_sales ?? 0), prev: posStats?.total_sales ? "Last month: —" : "—", change: 0, up: true }
+    : { label: "Total Subscribers", value: String(s?.total_subscribers ?? 0), prev: `Last month: ${s?.prev_total_subscribers ?? "—"}`, change: s?.subscribers_change_pct ?? 0, up: (s?.subscribers_change_pct ?? 0) >= 0 };
+
+  const card2 = isSales
+    ? { label: "Active Products", value: String(posStats?.active_products ?? 0), prev: "Last month: —", change: 0, up: true }
+    : { label: "New Subscribers", value: String(s?.new_subscribers ?? 0), prev: `Last month: ${s?.prev_new_subscribers ?? "—"}`, change: s?.new_subscribers_change_pct ?? 0, up: (s?.new_subscribers_change_pct ?? 0) >= 0 };
+
+  const pendingVal = isSales ? (posStats?.pending_payments ?? 0) : (s?.pending_payments ?? 0);
+  const pendingChange = isSales ? 0 : s?.pending_change_pct ?? 0;
+
+  const revenueVal = isSales ? (posStats?.total_revenue ?? 0) : (s?.total_revenue ?? 0);
+  const monthlyRevVal = s?.monthly_revenue ?? 0;
+  const revChange = isSales ? 0 : s?.revenue_change_pct ?? 0;
+
+  const chartData = s?.monthly_chart?.length ? s.monthly_chart : [];
+  const orders = s?.recent_orders?.length ? s.recent_orders : [];
+
+  // For sales use case, compute POS orders separately
+  const displayOrders = isSales ? [] : orders;
 
   const statCards = [
     {
-      label: useCase === "sales" ? "Total Sales" : "Total Subscribers",
-      value: String(totalSales ?? 0),
-      prev: useCase === "sales" ? "Last month: —" : `Last month: ${Math.max(0, (stats?.total_subscribers ?? 0) - 10)}`,
-      change: "+4.9%",
-      up: true,
+      label: card1.label,
+      value: card1.value,
+      prev: card1.prev,
+      change: card1.change,
+      up: card1.up,
       icon: <ShoppingCart className="w-5 h-5" />,
       accent: "bg-[#8B5CF6] text-white",
       iconBg: "bg-white/20",
     },
     {
-      label: useCase === "sales" ? "Active Products" : "New Subscribers",
-      value: String(activeCount ?? 0),
-      prev: "Last month: —",
-      change: "+7.1%",
-      up: true,
+      label: card2.label,
+      value: card2.value,
+      prev: card2.prev,
+      change: card2.change,
+      up: card2.up,
       icon: <Package className="w-5 h-5" />,
       accent: "bg-white border border-gray-100",
       iconBg: "bg-orange-100 text-orange-500",
     },
     {
       label: "Pending Payments",
-      value: String(useCase === "sales" ? (posStats?.pending_payments ?? 0) : (stats?.pending_payments ?? 0)),
-      prev: "Last month: —",
-      change: "-6.0%",
-      up: false,
+      value: String(pendingVal),
+      prev: `Last month: ${isSales ? "—" : (s?.prev_pending_payments ?? "—")}`,
+      change: pendingChange,
+      up: pendingChange <= 0,
       icon: <TrendingUp className="w-5 h-5" />,
       accent: "bg-white border border-gray-100",
       iconBg: "bg-sky-100 text-sky-500",
     },
     {
       label: "Total Revenue (XAF)",
-      value: (revenue ?? 0).toLocaleString(),
-      prev: `Monthly: ${monthlyRev.toLocaleString()}`,
-      change: "+5.5%",
-      up: true,
+      value: revenueVal.toLocaleString(),
+      prev: `Monthly: ${monthlyRevVal.toLocaleString()}`,
+      change: revChange,
+      up: revChange >= 0,
       icon: <Zap className="w-5 h-5" />,
       accent: "bg-white border border-gray-100",
       iconBg: "bg-purple-100 text-[#8B5CF6]",
@@ -313,10 +343,12 @@ export default function Dashboard() {
               {card.value}
             </p>
             <div className="flex items-center gap-1.5">
-              <span className={`flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full ${card.up ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}>
-                {card.up ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                {card.change}
-              </span>
+              {card.change !== 0 && (
+                <span className={`flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full ${card.up ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"}`}>
+                  {card.up ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                  {card.change > 0 ? "+" : ""}{card.change}%
+                </span>
+              )}
               <span className={`text-xs ${i === 0 ? "text-white/60" : "text-gray-400"}`}>{card.prev}</span>
             </div>
           </div>
@@ -335,13 +367,13 @@ export default function Dashboard() {
             </button>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={monthlyData} barGap={4} barCategoryGap="30%">
+            <BarChart data={chartData} barGap={4} barCategoryGap="30%">
               <CartesianGrid vertical={false} stroke="#f5f5f7" strokeDasharray="3 3" />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9ca3af" }} tickFormatter={(v) => `${v/1000}k`} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
               <Bar dataKey="sales" radius={[8,8,8,8]} maxBarSize={36}>
-                {monthlyData.map((_, idx) => (
+                {chartData.map((_, idx) => (
                   <Cell
                     key={idx}
                     fill={idx === activeBar ? "#8B5CF6" : "#e5e7eb"}
@@ -351,7 +383,7 @@ export default function Dashboard() {
                 ))}
               </Bar>
               <Bar dataKey="revenue" radius={[8,8,8,8]} maxBarSize={36}>
-                {monthlyData.map((_, idx) => (
+                {chartData.map((_, idx) => (
                   <Cell
                     key={idx}
                     fill={idx === activeBar ? "#7c3aed" : "#c4b5fd"}
@@ -374,27 +406,33 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-center">
-            <GaugeChart value={successRate} />
+            <GaugeChart value={isSales ? 0 : (s?.success_rate ?? 0)} />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-400 font-medium mb-1">
-                {useCase === "sales" ? "Number of Sales" : "Subscribers"}
+                {isSales ? "Number of Sales" : "Subscribers"}
               </p>
-              <p className="text-xl font-bold text-gray-900">{totalSales?.toLocaleString() ?? "—"}</p>
-              <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 mt-1">
-                <ArrowUp className="w-3 h-3" />4.5%
-              </span>
+              <p className="text-xl font-bold text-gray-900">
+                {isSales ? (posStats?.total_sales ?? "—") : (s?.total_subscribers ?? "—")}
+              </p>
+              {!isSales && s && s.subscribers_change_pct !== 0 && (
+                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
+                  <ArrowUp className="w-3 h-3" />{s.subscribers_change_pct}%
+                </span>
+              )}
             </div>
             <div>
               <p className="text-xs text-gray-400 font-medium mb-1">Total Revenue</p>
               <p className="text-xl font-bold text-gray-900">
-                {revenue ? `${(revenue / 1000).toFixed(1)}k XAF` : "—"}
+                {revenueVal ? `${(revenueVal / 1000).toFixed(1)}k XAF` : "—"}
               </p>
-              <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 mt-1">
-                <ArrowUp className="w-3 h-3" />5.5%
-              </span>
+              {!isSales && s && s.revenue_change_pct !== 0 && (
+                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-full mt-1 bg-emerald-100 text-emerald-600">
+                  <ArrowUp className="w-3 h-3" />{s.revenue_change_pct}%
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -418,7 +456,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <table className="w-full text-sm">
+          <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
               <th className="text-left px-6 py-3 w-8"><input type="checkbox" className="rounded" /></th>
@@ -431,14 +469,17 @@ export default function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {recentOrders.map((order, i) => (
-              <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            {displayOrders.length === 0 && (
+              <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-400 text-sm">No orders yet</td></tr>
+            )}
+            {displayOrders.map((order, i) => (
+              <tr key={order.id + i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-3.5"><input type="checkbox" className="rounded" /></td>
-                <td className="px-3 py-3.5 font-mono text-xs font-semibold text-gray-500">{order.id}</td>
+                <td className="px-3 py-3.5 font-mono text-xs font-semibold text-gray-500">#{order.id}</td>
                 <td className="px-3 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {order.customer.charAt(0)}
+                      {order.customer.charAt(0).toUpperCase()}
                     </div>
                     <span className="font-medium text-gray-800">{order.customer}</span>
                   </div>
@@ -446,7 +487,7 @@ export default function Dashboard() {
                 <td className="px-3 py-3.5 text-gray-400">{order.date}</td>
                 <td className="px-3 py-3.5 text-gray-500">{order.category}</td>
                 <td className="px-3 py-3.5"><StatusBadge status={order.status} /></td>
-                <td className="px-6 py-3.5 text-right font-semibold text-gray-900">{order.amount}</td>
+                <td className="px-6 py-3.5 text-right font-semibold text-gray-900">{order.amount.toLocaleString()} XAF</td>
               </tr>
             ))}
           </tbody>

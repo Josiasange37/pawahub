@@ -107,6 +107,20 @@ class TransactionOut(BaseModel):
     updated_at: datetime
 
 
+class MonthlyPoint(BaseModel):
+    month: str
+    sales: int = 0
+    revenue: int = 0
+
+class RecentOrder(BaseModel):
+    id: str
+    customer: str
+    phone: str = ""
+    date: str
+    category: str
+    status: str
+    amount: int
+
 class DashboardStats(BaseModel):
     total_subscribers: int
     active_subscribers: int
@@ -115,6 +129,22 @@ class DashboardStats(BaseModel):
     pending_payments: int
     failed_payments: int
     success_rate: float
+
+    prev_total_subscribers: int = 0
+    subscribers_change_pct: float = 0.0
+
+    new_subscribers: int = 0
+    prev_new_subscribers: int = 0
+    new_subscribers_change_pct: float = 0.0
+
+    prev_monthly_revenue: int = 0
+    revenue_change_pct: float = 0.0
+
+    prev_pending_payments: int = 0
+    pending_change_pct: float = 0.0
+
+    monthly_chart: list[MonthlyPoint] = []
+    recent_orders: list[RecentOrder] = []
 
 
 class PreferencesCreate(BaseModel):
