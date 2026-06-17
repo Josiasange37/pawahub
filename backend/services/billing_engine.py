@@ -85,8 +85,9 @@ async def complete_payment(cycle_id: str, deposit_id: str, interval_days: int = 
         "status": "pending",
     }).execute()
 
+    w_phone = sub.get("whatsapp", "") or sub["phone"]
     await notify_payment_success(
-        sub["phone"], sub.get("name", "Customer"),
+        w_phone, sub.get("name", "Customer"),
         sme["business_name"], c["amount"],
         plan.get("name", "Subscription"),
         sme["email"], sub.get("email", ""),
@@ -115,8 +116,9 @@ async def fail_payment(cycle_id: str, deposit_id: str, pawapay_status: str = "FA
         "updated_at": datetime.utcnow().isoformat(),
     }).eq("pawapay_deposit_id", deposit_id).execute()
 
+    w_phone = sub.get("whatsapp", "") or sub["phone"]
     await notify_payment_failed(
-        sub["phone"], sub.get("name", "Customer"),
+        w_phone, sub.get("name", "Customer"),
         sme["business_name"], c["amount"],
         plan.get("name", "Subscription"),
         sme["email"], pawapay_status,
@@ -171,8 +173,9 @@ async def run_daily_billing():
         _, sub, plan, sme = await _fetch_cycle_context(cycle["id"])
         if not sub:
             continue
+        w_phone = sub.get("whatsapp", "") or sub["phone"]
         await notify_payment_reminder(
-            sub["phone"],
+            w_phone,
             sme["business_name"],
             cycle["amount"],
             cycle.get("due_date", today_str),

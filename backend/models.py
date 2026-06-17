@@ -24,6 +24,8 @@ TABLES = {
         "plan_id": "uuid references subscription_plans(id) not null",
         "name": "text not null",
         "phone": "text not null",
+        "email": "text default ''",
+        "whatsapp": "text default ''",
         "is_active": "boolean default true",
         "created_at": "timestamptz default now()",
     },

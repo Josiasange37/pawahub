@@ -64,6 +64,7 @@ class SubscriberCreate(BaseModel):
     name: str
     phone: str
     email: str = ""
+    whatsapp: str = ""
 
 
 class SubscriberOut(BaseModel):
@@ -73,6 +74,7 @@ class SubscriberOut(BaseModel):
     name: str
     phone: str
     email: str
+    whatsapp: str
     is_active: bool
     created_at: datetime
 

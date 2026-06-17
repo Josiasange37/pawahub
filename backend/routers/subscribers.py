@@ -23,6 +23,7 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         "name": body.name,
         "phone": body.phone,
         "email": body.email,
+        "whatsapp": body.whatsapp,
     }).execute()
 
     subscriber = sub.data[0]
@@ -43,7 +44,7 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         f"Your first payment of *{plan_data['amount']:,} XAF* will be due on *{due_date}*.\n\n"
         f"Thank you for choosing us!"
     )
-    await send_whatsapp(body.phone, welcome, sme_id=sme["id"])
+    await send_whatsapp(body.whatsapp or body.phone, welcome, sme_id=sme["id"])
 
     return SubscriberOut(**subscriber)
 

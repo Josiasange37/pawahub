@@ -8,6 +8,7 @@ interface Subscriber {
   name: string;
   phone: string;
   email: string;
+  whatsapp: string;
   plan_id: string;
   is_active: boolean;
   created_at: string;
@@ -38,7 +39,7 @@ export default function Subscribers() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ plan_id: "", name: "", phone: "", email: "" });
+  const [form, setForm] = useState({ plan_id: "", name: "", phone: "", email: "", whatsapp: "" });
   const [saving, setSaving] = useState(false);
   const [charging, setCharging] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export default function Subscribers() {
     setSaving(true);
     try {
       await api("/api/subscribers", { method: "POST", token: getToken()!, body: form });
-      setForm({ plan_id: "", name: "", phone: "", email: "" });
+      setForm({ plan_id: "", name: "", phone: "", email: "", whatsapp: "" });
       setShowForm(false);
       showToast("Subscriber added successfully", "success");
       load();
@@ -157,6 +158,10 @@ export default function Subscribers() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Email (optional)</label>
                 <input className={inputCls} type="email" placeholder="email@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1.5 block">WhatsApp Number</label>
+                <input className={inputCls} placeholder="237650000000" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Subscription Plan</label>
