@@ -9,6 +9,9 @@ from services.whatsapp import send_whatsapp
 
 router = APIRouter(prefix="/api/subscribers", tags=["subscribers"])
 
+# In-memory cache for whatsapp numbers (DB column doesn't exist)
+_subscriber_whatsapp: dict[str, str] = {}
+
 
 @router.post("", response_model=SubscriberOut)
 async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
@@ -48,6 +51,7 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
     subscriber = sub.data[0]
     subscriber["whatsapp"] = body.whatsapp or subscriber.get("whatsapp", "")
     subscriber["email"] = body.email or subscriber.get("email", "")
+    _subscriber_whatsapp[subscriber["id"]] = subscriber["whatsapp"]
 
     due_date = date.today() + timedelta(days=plan_data["interval_days"])
     db.table("payment_cycles").insert({

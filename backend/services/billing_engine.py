@@ -5,6 +5,17 @@ from database import get_db
 from services.pawapay import initiate_deposit, check_deposit_status
 from services.notifications import notify_payment_success, notify_payment_failed, notify_payment_reminder
 
+_whatsapp_cache: dict[str, str] = {}
+
+def _get_whatsapp_cache():
+    if not _whatsapp_cache:
+        try:
+            from routers.subscribers import _subscriber_whatsapp
+            _whatsapp_cache.update(_subscriber_whatsapp)
+        except ImportError:
+            pass
+    return _whatsapp_cache
+
 
 async def _fetch_cycle_context(cycle_id: str):
     db = get_db()
@@ -19,7 +30,12 @@ async def _fetch_cycle_context(cycle_id: str):
     sme = db.table("smes").select("*").eq("id", sub.data[0]["sme_id"]).execute()
     if not plan.data or not sme.data:
         return None, None, None, None
-    return c, sub.data[0], plan.data[0], sme.data[0]
+    sub = sub.data[0]
+    cached = _get_whatsapp_cache()
+    cached_wa = cached.get(sub["id"])
+    if cached_wa:
+        sub["whatsapp"] = cached_wa
+    return c, sub, plan.data[0], sme.data[0]
 
 
 async def initiate_payment(cycle_id: str):
@@ -86,9 +102,6 @@ async def complete_payment(cycle_id: str, deposit_id: str, interval_days: int = 
     }).execute()
 
     w_phone = sub.get("whatsapp") or sub.get("phone", "")
-
-    if not w_phone:
-        w_phone = sub["phone"]
     await notify_payment_success(
         w_phone, sub.get("name", "Customer"),
         sme["business_name"], c["amount"],
@@ -120,9 +133,6 @@ async def fail_payment(cycle_id: str, deposit_id: str, pawapay_status: str = "FA
     }).eq("pawapay_deposit_id", deposit_id).execute()
 
     w_phone = sub.get("whatsapp") or sub.get("phone", "")
-
-    if not w_phone:
-        w_phone = sub["phone"]
     await notify_payment_failed(
         w_phone, sub.get("name", "Customer"),
         sme["business_name"], c["amount"],
@@ -180,9 +190,6 @@ async def run_daily_billing():
         if not sub:
             continue
         w_phone = sub.get("whatsapp") or sub.get("phone", "")
-
-    if not w_phone:
-        w_phone = sub["phone"]
         await notify_payment_reminder(
             w_phone,
             sme["business_name"],
