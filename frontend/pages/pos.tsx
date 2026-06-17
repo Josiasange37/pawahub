@@ -24,6 +24,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  stock: number;
   is_active: boolean;
   created_at: string;
 }
@@ -79,6 +80,12 @@ export default function POS() {
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
+      const currentQty = existing ? existing.quantity : 0;
+      const maxStock = product.stock ?? 0;
+      if (currentQty >= maxStock) {
+        showToast(`Only ${maxStock} available in stock`, "error");
+        return prev;
+      }
       if (existing) {
         return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
@@ -90,7 +97,13 @@ export default function POS() {
     if (qty <= 0) {
       setCart((prev) => prev.filter((i) => i.product.id !== productId));
     } else {
-      setCart((prev) => prev.map((i) => i.product.id === productId ? { ...i, quantity: qty } : i));
+      setCart((prev) => prev.map((i) => {
+        if (i.product.id === productId) {
+          const maxStock = i.product.stock ?? 0;
+          return { ...i, quantity: Math.min(qty, maxStock) };
+        }
+        return i;
+      }));
     }
   };
 
@@ -229,24 +242,39 @@ export default function POS() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredProducts.filter((p) => p.is_active).map((product) => (
+              {filteredProducts.filter((p) => p.is_active).map((product) => {
+                const outOfStock = (product.stock ?? 0) <= 0;
+                return (
                 <button
                   key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-[#8B5CF6] hover:shadow-md transition duration-200 text-left flex flex-col justify-between h-28 group relative overflow-hidden shadow-sm"
+                  onClick={() => !outOfStock && addToCart(product)}
+                  disabled={outOfStock}
+                  className={`bg-white p-5 rounded-2xl border border-gray-100 transition duration-200 text-left flex flex-col justify-between h-28 group relative overflow-hidden shadow-sm ${
+                    outOfStock
+                      ? "opacity-50 cursor-not-allowed border-gray-200"
+                      : "hover:border-[#8B5CF6] hover:shadow-md cursor-pointer"
+                  }`}
                 >
                   <div>
                     <p className="font-bold text-gray-900 text-sm group-hover:text-[#8B5CF6] transition">{product.name}</p>
                     {product.description && <p className="text-xs text-gray-400 mt-1 line-clamp-1">{product.description}</p>}
                   </div>
                   <div className="flex items-center justify-between mt-3">
-                    <p className="text-base font-bold text-[#8B5CF6]">{product.price.toLocaleString()} <span className="text-[10px] font-semibold text-gray-400">XAF</span></p>
-                    <span className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
-                      <Plus className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                    </span>
+                    <div>
+                      <p className="text-base font-bold text-[#8B5CF6]">{product.price.toLocaleString()} <span className="text-[10px] font-semibold text-gray-400">XAF</span></p>
+                      <p className="text-[10px] text-gray-400">Stock: {product.stock ?? 0}</p>
+                    </div>
+                    {outOfStock ? (
+                      <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Out</span>
+                    ) : (
+                      <span className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
+                        <Plus className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                      </span>
+                    )}
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

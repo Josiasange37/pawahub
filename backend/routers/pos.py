@@ -40,6 +40,18 @@ async def create_sale(body: SaleCreate, sme: dict = Depends(get_current_sme), db
     if len(products_map) != len(product_ids):
         raise HTTPException(status_code=400, detail="One or more products not found")
 
+    # Validate stock
+    for item in body.items:
+        product = products_map[str(item.product_id)]
+        current_stock = product.get("stock", 0)
+        if current_stock is None:
+            current_stock = 0
+        if item.quantity > current_stock:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for '{product['name']}': requested {item.quantity}, available {current_stock}"
+            )
+
     total_amount = 0
     sale_items = []
     for item in body.items:
@@ -149,6 +161,17 @@ async def charge_sale(sale_id: str, sme: dict = Depends(get_current_sme), db: Cl
         raise HTTPException(status_code=500, detail=f"Payment failed: {str(e)}")
 
 
+def _deduct_stock(sale_id: str):
+    db = get_db()
+    items = db.table("pos_sale_items").select("product_id, quantity").eq("sale_id", sale_id).execute()
+    for item in items.data or []:
+        product = db.table("products").select("stock").eq("id", item["product_id"]).execute()
+        if product.data:
+            current = product.data[0].get("stock") or 0
+            new_stock = max(0, current - item["quantity"])
+            db.table("products").update({"stock": new_stock}).eq("id", item["product_id"]).execute()
+
+
 async def _poll_pos_fallback(sale_id: str, deposit_id: str):
     for attempt in range(12):
         await asyncio.sleep(30)
@@ -161,6 +184,7 @@ async def _poll_pos_fallback(sale_id: str, deposit_id: str):
             s = status["status"]
             if s == "COMPLETED":
                 db.table("pos_sales").update({"payment_status": "completed"}).eq("id", sale_id).execute()
+                _deduct_stock(sale_id)
                 return
             elif s in ("FAILED", "DECLINED", "EXPIRED"):
                 db.table("pos_sales").update({"payment_status": "failed"}).eq("id", sale_id).execute()

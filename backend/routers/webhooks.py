@@ -50,6 +50,8 @@ async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, d
             sme_id = sale.get("sme_id")
             if status == "COMPLETED":
                 db.table("pos_sales").update({"payment_status": "completed"}).eq("id", sale_id).execute()
+                from routers.pos import _deduct_stock
+                _deduct_stock(sale_id)
                 if phone:
                     msg = (
                         f"✅ *Payment Successful!*\n\n"
