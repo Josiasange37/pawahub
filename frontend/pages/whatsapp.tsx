@@ -6,7 +6,9 @@ import { MessageCircle, CheckCircle2, XCircle, RefreshCw, Loader2, ArrowLeft } f
 import { useRouter } from "next/router";
 
 const getBotUrl = () => {
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") return "http://localhost:3001";
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return process.env.NEXT_PUBLIC_BOT_URL || "http://localhost:3001";
+  }
   return process.env.NEXT_PUBLIC_BOT_URL || "https://zooming-bravery-production-f6f7.up.railway.app";
 };
 

@@ -8,10 +8,8 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
 const getBotUrl = () => {
-  if (typeof window !== "undefined") {
-    if (window.location.hostname === "localhost") {
-      return "http://localhost:3001";
-    }
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return process.env.NEXT_PUBLIC_BOT_URL || "http://localhost:3001";
   }
   return process.env.NEXT_PUBLIC_BOT_URL || "https://zooming-bravery-production-f6f7.up.railway.app";
 };
