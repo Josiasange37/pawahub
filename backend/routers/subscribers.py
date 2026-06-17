@@ -23,22 +23,31 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         "name": body.name,
         "phone": body.phone,
     }
-    optional = {}
     for col in ("email", "whatsapp"):
         val = getattr(body, col, None) or ""
         if val:
-            optional[col] = val
-    insert_data.update(optional)
+            insert_data[col] = val
+
+    # Try full insert; if it fails (e.g. missing column), retry without the offending column
+    sub = None
     try:
         sub = db.table("subscribers").insert(insert_data).execute()
     except Exception:
-        for col in ("email", "whatsapp"):
-            insert_data.pop(col, None)
-        sub = db.table("subscribers").insert(insert_data).execute()
+        for col in list(insert_data.keys()):
+            if col in ("email", "whatsapp"):
+                try:
+                    candidate = {k: v for k, v in insert_data.items() if k != col}
+                    sub = db.table("subscribers").insert(candidate).execute()
+                    break
+                except Exception:
+                    continue
+
+    if sub is None or not sub.data:
+        raise HTTPException(status_code=500, detail="Failed to create subscriber")
 
     subscriber = sub.data[0]
-    subscriber.setdefault("whatsapp", body.whatsapp or "")
-    subscriber.setdefault("email", body.email or "")
+    subscriber["whatsapp"] = body.whatsapp or subscriber.get("whatsapp", "")
+    subscriber["email"] = body.email or subscriber.get("email", "")
 
     due_date = date.today() + timedelta(days=plan_data["interval_days"])
     db.table("payment_cycles").insert({
