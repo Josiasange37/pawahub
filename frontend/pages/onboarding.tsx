@@ -301,7 +301,7 @@ export default function Onboarding() {
                     <div className="space-y-3">
                       <button
                         onClick={() => goToNextStep(1, 'businessType', 'solo')}
-                        className="w-full p-4.5 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group"
+                        className="w-full p-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#8B5CF6]/30 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group shadow-sm"
                       >
                         <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 group-hover:bg-[#8B5CF6]/10 transition">
                           <User className="w-5 h-5 text-[#8B5CF6]" />
@@ -314,7 +314,7 @@ export default function Onboarding() {
 
                       <button
                         onClick={() => goToNextStep(1, 'businessType', 'enterprise')}
-                        className="w-full p-4.5 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group"
+                        className="w-full p-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group shadow-sm"
                       >
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-[#10B981]/10 transition">
                           <Building2 className="w-5 h-5 text-[#10B981]" />
@@ -342,7 +342,7 @@ export default function Onboarding() {
                     <div className="space-y-3">
                       <button
                         onClick={() => goToNextStep(2, 'useCase', 'subscriptions')}
-                        className="w-full p-4.5 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group"
+                        className="w-full p-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-[#8B5CF6]/30 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group shadow-sm"
                       >
                         <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 group-hover:bg-[#8B5CF6]/10 transition">
                           <RefreshCw className="w-5 h-5 text-[#8B5CF6]" />
@@ -355,7 +355,7 @@ export default function Onboarding() {
 
                       <button
                         onClick={() => goToNextStep(2, 'useCase', 'sales')}
-                        className="w-full p-4.5 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group"
+                        className="w-full p-4 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 text-left flex items-center gap-4 group shadow-sm"
                       >
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-[#10B981]/10 transition">
                           <ShoppingCart className="w-5 h-5 text-[#10B981]" />

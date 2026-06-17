@@ -110,19 +110,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
     };
-    if (notifOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [notifOpen]);
 
-  const openNotifs = () => {
-    setNotifOpen(true);
-    setUnreadCount(0);
-    try { localStorage.setItem(NOTIF_POLL_KEY, Date.now().toString()); } catch {}
+  const toggleNotifs = () => {
+    setNotifOpen((prev) => {
+      if (prev) return false;
+      setUnreadCount(0);
+      try { localStorage.setItem(NOTIF_POLL_KEY, Date.now().toString()); } catch {}
+      return true;
+    });
   };
 
   if (!mounted) return (
@@ -246,7 +255,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
         {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-100 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
+        <header className="bg-white border-b border-gray-100 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-4">
             {/* Mobile menu */}
             <button
@@ -275,7 +284,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* Bell */}
             <div ref={notifRef} className="relative">
               <button
-                onClick={openNotifs}
+                onClick={toggleNotifs}
                 className="relative w-9 h-9 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
               >
                 <Bell className="w-4 h-4" />
@@ -288,7 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Dropdown */}
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/5 z-50 overflow-hidden">
+                <div className="fixed sm:absolute right-2 sm:right-0 mt-2 w-[calc(100vw-16px)] sm:w-80 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/5 z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-bold text-gray-900">Notifications</p>
                   </div>
@@ -304,6 +313,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         return (
                           <div
                             key={n.id}
+                            onClick={() => setNotifOpen(false)}
                             className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 flex items-start gap-3 cursor-pointer transition"
                           >
                             <div className={`mt-0.5 ${ok ? "text-emerald-500" : "text-red-400"}`}>

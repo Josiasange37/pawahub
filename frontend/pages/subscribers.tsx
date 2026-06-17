@@ -104,7 +104,7 @@ export default function Subscribers() {
   const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
 
       {/* Confirm Deactivate Modal */}
       {confirmDelete && (
@@ -185,7 +185,7 @@ export default function Subscribers() {
       {/* Table Card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Table Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-900">All Subscribers</h2>
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-48">
             <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
