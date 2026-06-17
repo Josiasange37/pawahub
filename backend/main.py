@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from routers import auth, plans, subscribers, billing, webhooks, dashboard, preferences, products, pos, notifications
 from services.billing_engine import run_daily_billing
+from services.whatsapp import warm_bot
 
 scheduler = AsyncIOScheduler()
 
@@ -13,6 +14,7 @@ scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler.add_job(run_daily_billing, "interval", hours=6, id="daily_billing")
+    scheduler.add_job(warm_bot, "interval", minutes=5, id="bot_keep_warm")
     scheduler.start()
     yield
     scheduler.shutdown()

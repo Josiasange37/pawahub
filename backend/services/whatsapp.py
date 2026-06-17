@@ -1,5 +1,6 @@
-from config import settings
+import asyncio
 import httpx
+from config import settings
 
 
 async def send_whatsapp(phone: str, message: str, sme_id: str = "") -> bool:
@@ -9,16 +10,45 @@ async def send_whatsapp(phone: str, message: str, sme_id: str = "") -> bool:
     print(f"  SME:     {sme_id}")
     print(f"  Message: {message}")
     print(f"{'='*50}\n")
+
+    last_err = None
+    for attempt in range(1, 4):
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(
+                    f"{settings.baileys_bot_url}/send",
+                    json={"phone": phone, "message": message, "sme_id": sme_id},
+                )
+                if resp.status_code == 200:
+                    return True
+                print(f"  Attempt {attempt}: bot returned HTTP {resp.status_code}")
+                last_err = f"HTTP {resp.status_code}"
+        except httpx.TimeoutException:
+            print(f"  Attempt {attempt}: timeout (Railway cold start?)")
+            last_err = "timeout"
+        except Exception as e:
+            print(f"  Attempt {attempt}: {e}")
+            last_err = str(e)
+
+        if attempt < 3:
+            wait = 2 ** attempt
+            print(f"  Retrying in {wait}s...")
+            await asyncio.sleep(wait)
+
+    print(f" WhatsApp failed after 3 attempts: {last_err}")
+    return False
+
+
+async def warm_bot():
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(
-                f"{settings.baileys_bot_url}/send",
-                json={"phone": phone, "message": message, "sme_id": sme_id},
-            )
-            return resp.status_code == 200
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{settings.baileys_bot_url}/status")
+            if resp.status_code == 200:
+                print("  Bot keep-warm: OK")
+            else:
+                print(f"  Bot keep-warm: HTTP {resp.status_code}")
     except Exception as e:
-        print(f"WhatsApp failed (bot not connected): {e}")
-        return False
+        print(f"  Bot keep-warm: {e}")
 
 
 def payment_reminder_msg(business_name: str, amount: int, due_date: str) -> str:
