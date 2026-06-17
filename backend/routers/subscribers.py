@@ -17,14 +17,20 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Plan not found")
     plan_data = plan.data[0]
 
-    sub = db.table("subscribers").insert({
+    insert_data = {
         "sme_id": sme["id"],
         "plan_id": str(body.plan_id),
         "name": body.name,
         "phone": body.phone,
-        "email": body.email,
-        "whatsapp": body.whatsapp,
-    }).execute()
+    }
+    try:
+        insert_data["email"] = body.email
+        insert_data["whatsapp"] = body.whatsapp
+        sub = db.table("subscribers").insert(insert_data).execute()
+    except Exception:
+        insert_data.pop("email", None)
+        insert_data.pop("whatsapp", None)
+        sub = db.table("subscribers").insert(insert_data).execute()
 
     subscriber = sub.data[0]
 

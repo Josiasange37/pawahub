@@ -11,44 +11,8 @@ from services.whatsapp import warm_bot
 scheduler = AsyncIOScheduler()
 
 
-def run_migrations():
-    try:
-        import psycopg2
-    except ImportError:
-        return
-    from config import settings
-    from urllib.parse import urlparse
-    parsed = urlparse(settings.supabase_url)
-    db_host = parsed.hostname
-    db_name = (parsed.path.lstrip("/") if parsed.path else "postgres").rsplit("?", 1)[0]
-    db_user = "postgres"
-    try:
-        conn = psycopg2.connect(
-            host=db_host, port=5432, dbname=db_name,
-            user=db_user, password=settings.supabase_db_password,
-            connect_timeout=5,
-        )
-        cur = conn.cursor()
-        for sql in [
-            "ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-            "ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS whatsapp TEXT DEFAULT '';",
-            "ALTER TABLE smes ADD COLUMN IF NOT EXISTS business_type TEXT DEFAULT 'solo';",
-            "ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0;",
-        ]:
-            try:
-                cur.execute(sql)
-            except Exception:
-                pass
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception:
-        pass
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    run_migrations()
     scheduler.add_job(run_daily_billing, "interval", hours=6, id="daily_billing")
     scheduler.add_job(warm_bot, "interval", minutes=5, id="bot_keep_warm")
     scheduler.start()
