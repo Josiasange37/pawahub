@@ -162,6 +162,8 @@ async def _poll_fallback(deposit_id: str, transaction_id: str, cycle_id: str, in
                 await fail_payment(cycle_id, deposit_id, s)
                 return
 
+    await fail_payment(cycle_id, deposit_id, "TIMEOUT")
+
 
 async def run_daily_billing():
     db = get_db()

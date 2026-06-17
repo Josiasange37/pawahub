@@ -58,6 +58,59 @@ async def initiate_deposit(
         return {"success": False, "error": str(error_detail), "provider": provider}
 
 
+async def initiate_payout(
+    amount: int,
+    phone: str,
+    reference: str,
+) -> dict:
+    provider = detect_provider(phone)
+    headers = {
+        "Authorization": f"Bearer {settings.pawapay_api_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "payoutId": reference,
+        "amount": str(amount),
+        "currency": "XAF",
+        "recipient": {
+            "type": "MMO",
+            "accountDetails": {
+                "phoneNumber": phone,
+                "provider": provider,
+            },
+        },
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"{settings.pawapay_base_url}/v2/payouts",
+            headers=headers,
+            json=payload,
+        )
+        if resp.status_code in (200, 201, 202):
+            data = resp.json()
+            return {"success": True, "payout_id": reference, "status": data.get("status", "ACCEPTED"), "provider": provider}
+        error_detail = resp.text
+        try:
+            error_detail = resp.json()
+        except Exception:
+            pass
+        return {"success": False, "error": str(error_detail), "provider": provider}
+
+
+async def check_payout_status(payout_id: str) -> dict:
+    headers = {"Authorization": f"Bearer {settings.pawapay_api_token}"}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(
+            f"{settings.pawapay_base_url}/v2/payouts/{payout_id}",
+            headers=headers,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            inner = data.get("data", {}) or {}
+            return {"success": True, "status": inner.get("status") or data.get("status"), "data": inner}
+        return {"success": False, "error": resp.text}
+
+
 async def check_deposit_status(deposit_id: str) -> dict:
     headers = {"Authorization": f"Bearer {settings.pawapay_api_token}"}
     async with httpx.AsyncClient(timeout=30) as client:

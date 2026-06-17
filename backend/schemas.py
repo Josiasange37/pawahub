@@ -231,3 +231,30 @@ class ReceiptData(BaseModel):
     sme_name: str
     sme_phone: str
     business_name: str
+
+
+class PayoutCreate(BaseModel):
+    amount: int
+    phone: str
+
+
+class PayoutOut(BaseModel):
+    id: str
+    sme_id: str
+    pawapay_payout_id: str | None = None
+    amount: int
+    currency: str = "XAF"
+    recipient_phone: str
+    recipient_provider: str | None = None
+    status: str = "pending"
+    pawapay_status: str | None = None
+    error_message: str | None = None
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class PayoutBalance(BaseModel):
+    available_balance: int
+    total_collected: int
+    total_withdrawn: int
+    pending_withdrawals: int

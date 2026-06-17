@@ -69,6 +69,35 @@ async def pawapay_webhook(request: Request, background_tasks: BackgroundTasks, d
                     )
                     await send_whatsapp(phone, msg, sme_id=sme_id)
 
+        # Check if it's a payout
+        payout_id = body.get("payoutId") or deposit_id
+        payout = db.table("payouts").select("id, sme_id, recipient_phone, amount").eq("pawapay_payout_id", payout_id).execute()
+        if payout.data:
+            p = payout.data[0]
+            if status == "COMPLETED":
+                db.table("payouts").update({"status": "completed", "pawapay_status": status}).eq("id", p["id"]).execute()
+                phone = p.get("recipient_phone")
+                if phone:
+                    msg = (
+                        f"✅ *Withdrawal Successful!*\n\n"
+                        f"Your withdrawal of *{p['amount']:,} XAF* has been sent to your mobile money account.\n"
+                        f"Thank you for using Fluxpay!"
+                    )
+                    await send_whatsapp(phone, msg, sme_id=p["sme_id"])
+            elif status in ("FAILED", "DECLINED", "EXPIRED"):
+                db.table("payouts").update({
+                    "status": "failed", "pawapay_status": status,
+                    "error_message": f"pawaPay: {status}",
+                }).eq("id", p["id"]).execute()
+                phone = p.get("recipient_phone")
+                if phone:
+                    msg = (
+                        f"❌ *Withdrawal Failed*\n\n"
+                        f"Your withdrawal of *{p['amount']:,} XAF* could not be processed.\n"
+                        f"Please check your mobile money account and try again."
+                    )
+                    await send_whatsapp(phone, msg, sme_id=p["sme_id"])
+
     return {"status": "received"}
 
 

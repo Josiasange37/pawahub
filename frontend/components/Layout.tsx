@@ -4,7 +4,7 @@ import { api, getToken, removeToken, getSme, getPreferencesFallback } from "../l
 import {
   LayoutDashboard, ShoppingCart, Package, History, MessageCircle,
   Users, FileText, CreditCard, Settings, LogOut, Bell, ChevronDown,
-  CheckCircle, XCircle, Menu, X
+  CheckCircle, XCircle, Menu, X, Wallet
 } from "lucide-react";
 
 interface Notification {
@@ -152,6 +152,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { label: "Point of Sale",href: "/pos",                 icon: ShoppingCart },
         { label: "Products",     href: "/products",            icon: Package },
         { label: "Sales History",href: "/sales",               icon: History },
+        { label: "Withdraw",     href: "/withdraw",            icon: Wallet },
         { label: "WhatsApp",     href: "/whatsapp",            icon: MessageCircle, dot: whatsappConnected },
       ]
     : [
@@ -159,6 +160,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { label: "Plans",        href: "/plans",               icon: FileText },
         { label: "Subscribers",  href: "/subscribers",         icon: Users },
         { label: "Transactions", href: "/transactions",        icon: CreditCard },
+        { label: "Withdraw",     href: "/withdraw",            icon: Wallet },
         { label: "WhatsApp",     href: "/whatsapp",            icon: MessageCircle, dot: whatsappConnected },
       ];
 

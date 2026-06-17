@@ -130,7 +130,7 @@ function GaugeChart({ value }: { value: number }) {
 function StatusBadge({ status }: { status: string }) {
   const s = status?.toLowerCase() ?? "";
   let cls = "bg-gray-100 text-gray-600 border border-gray-200";
-  if (s === "pending" || s === "retrying") cls = "bg-yellow-50 text-yellow-600 border border-yellow-200";
+  if (s === "pending" || s === "retrying" || s === "processing") cls = "bg-yellow-50 text-yellow-600 border border-yellow-200";
   else if (s === "completed" || s === "paid" || s === "success") cls = "bg-emerald-50 text-emerald-600 border border-emerald-200";
   else if (s === "failed" || s === "timeout") cls = "bg-red-50 text-red-500 border border-red-200";
   return (
@@ -233,7 +233,9 @@ export default function Dashboard() {
   const orders = s?.recent_orders?.length ? s.recent_orders : [];
 
   // For sales use case, compute POS orders separately
-  const displayOrders = isSales ? [] : orders;
+  const displayOrders = isSales ? [] : orders.filter(
+    (o) => ["completed", "paid", "success"].includes(o.status.toLowerCase())
+  );
 
   const statCards = [
     {

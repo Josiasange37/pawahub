@@ -71,6 +71,18 @@ async def get_stats(sme: dict = Depends(get_current_sme), db: Client = Depends(g
                 except Exception:
                     pass
 
+        # Subtract withdrawals from revenue
+        try:
+            payouts_result = db.table("payouts").select("amount, created_at").eq("sme_id", sme["id"]).eq("status", "completed").execute()
+            for p in payouts_result.data:
+                amt = p["amount"]
+                total_revenue -= amt
+                created = p.get("created_at", "")
+                if created >= this_start.isoformat():
+                    this_month_rev -= amt
+        except Exception:
+            pass
+
         pending = sum(1 for c in cycles.data if c["status"] == "pending")
         failed = sum(1 for c in cycles.data if c["status"] in ("failed", "timeout"))
         completed_cycles = sum(1 for c in cycles.data if c["status"] == "paid")

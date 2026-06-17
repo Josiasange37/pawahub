@@ -1,5 +1,7 @@
 import uuid
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from services.pawapay import check_deposit_status
 from fastapi.responses import FileResponse
 from schemas import SaleCreate, SaleOut, SaleItemOut
 from auth import get_current_sme
@@ -137,12 +139,34 @@ async def charge_sale(sale_id: str, sme: dict = Depends(get_current_sme), db: Cl
             "pawapay_deposit_id": deposit_ref,
         }).eq("id", sale_id).execute()
 
+        asyncio.create_task(_poll_pos_fallback(sale_id, deposit_ref))
+
         return {"message": "Payment initiated", "deposit_id": deposit_ref, "status": "processing"}
     except Exception as e:
         db.table("pos_sales").update({
             "payment_status": "failed",
         }).eq("id", sale_id).execute()
         raise HTTPException(status_code=500, detail=f"Payment failed: {str(e)}")
+
+
+async def _poll_pos_fallback(sale_id: str, deposit_id: str):
+    for attempt in range(12):
+        await asyncio.sleep(30)
+        db = get_db()
+        sale = db.table("pos_sales").select("payment_status").eq("id", sale_id).execute()
+        if sale.data and sale.data[0]["payment_status"] not in ("pending", "processing"):
+            return
+        status = await check_deposit_status(deposit_id)
+        if status["success"]:
+            s = status["status"]
+            if s == "COMPLETED":
+                db.table("pos_sales").update({"payment_status": "completed"}).eq("id", sale_id).execute()
+                return
+            elif s in ("FAILED", "DECLINED", "EXPIRED"):
+                db.table("pos_sales").update({"payment_status": "failed"}).eq("id", sale_id).execute()
+                return
+
+    db.table("pos_sales").update({"payment_status": "failed", "pawapay_deposit_id": deposit_id}).eq("id", sale_id).execute()
 
 
 @router.get("/sales", response_model=list[SaleOut])
@@ -265,6 +289,13 @@ async def pos_stats(sme: dict = Depends(get_current_sme), db: Client = Depends(g
     total_sales = len(sales.data)
     total_revenue = sum(s["total_amount"] for s in sales.data if s["payment_status"] == "completed")
     pending = sum(1 for s in sales.data if s["payment_status"] == "pending")
+
+    # Subtract withdrawals from revenue
+    try:
+        payouts_result = db.table("payouts").select("amount").eq("sme_id", sme["id"]).eq("status", "completed").execute()
+        total_revenue -= sum(p["amount"] for p in payouts_result.data)
+    except Exception:
+        pass
 
     return {
         "total_sales": total_sales,
