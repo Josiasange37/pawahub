@@ -23,16 +23,22 @@ async def add_subscriber(body: SubscriberCreate, sme: dict = Depends(get_current
         "name": body.name,
         "phone": body.phone,
     }
+    optional = {}
+    for col in ("email", "whatsapp"):
+        val = getattr(body, col, None) or ""
+        if val:
+            optional[col] = val
+    insert_data.update(optional)
     try:
-        insert_data["email"] = body.email
-        insert_data["whatsapp"] = body.whatsapp
         sub = db.table("subscribers").insert(insert_data).execute()
     except Exception:
-        insert_data.pop("email", None)
-        insert_data.pop("whatsapp", None)
+        for col in ("email", "whatsapp"):
+            insert_data.pop(col, None)
         sub = db.table("subscribers").insert(insert_data).execute()
 
     subscriber = sub.data[0]
+    subscriber.setdefault("whatsapp", body.whatsapp or "")
+    subscriber.setdefault("email", body.email or "")
 
     due_date = date.today() + timedelta(days=plan_data["interval_days"])
     db.table("payment_cycles").insert({

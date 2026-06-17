@@ -73,8 +73,8 @@ class SubscriberOut(BaseModel):
     plan_id: UUID
     name: str
     phone: str
-    email: str
-    whatsapp: str
+    email: str = ""
+    whatsapp: str = ""
     is_active: bool
     created_at: datetime
 
