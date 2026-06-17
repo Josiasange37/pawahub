@@ -73,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [mounted, token, sme?.id]);
 
   useEffect(() => {
-    if (mounted && !token && router.pathname !== "/login") router.push("/login");
+    if (mounted && !token && router.pathname !== "/login" && router.pathname !== "/welcome") router.push("/welcome");
   }, [mounted, token]);
 
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 
-  if (router.pathname === "/login" || router.pathname === "/onboarding") {
+  if (router.pathname === "/login" || router.pathname === "/onboarding" || router.pathname === "/welcome") {
     return <>{children}</>;
   }
 
