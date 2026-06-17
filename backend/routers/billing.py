@@ -70,6 +70,18 @@ async def charge_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current
     return {"message": result.get("status", "processing"), "cycle_id": cycle_id, "amount": plan_data["amount"], "status": result.get("status")}
 
 
+@router.delete("/cycles/{cycle_id}")
+async def delete_cycle(cycle_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    cycle = db.table("payment_cycles").select("*,subscriber_id").eq("id", str(cycle_id)).execute()
+    if not cycle.data:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    sub = db.table("subscribers").select("id").eq("id", cycle.data[0]["subscriber_id"]).eq("sme_id", sme["id"]).execute()
+    if not sub.data:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    db.table("payment_cycles").delete().eq("id", str(cycle_id)).execute()
+    return {"message": "Payment cycle deleted"}
+
+
 @router.get("/transactions", response_model=list[TransactionOut])
 async def list_transactions(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     txs = db.table("transactions").select("*").eq("sme_id", sme["id"]).order("created_at", desc=True).limit(50).execute()

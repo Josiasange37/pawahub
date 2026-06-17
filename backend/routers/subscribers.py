@@ -63,6 +63,16 @@ async def get_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sm
     return SubscriberOut(**sub.data[0])
 
 
+@router.delete("/all")
+async def clear_all_subscribers(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sub_ids = [s["id"] for s in db.table("subscribers").select("id").eq("sme_id", sme["id"]).execute().data]
+    for sid in sub_ids:
+        db.table("payment_cycles").delete().eq("subscriber_id", sid).execute()
+        db.table("transactions").delete().eq("subscriber_id", sid).execute()
+    db.table("subscribers").delete().eq("sme_id", sme["id"]).execute()
+    return {"message": "All subscribers and related data cleared"}
+
+
 @router.delete("/{subscriber_id}")
 async def delete_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     db.table("payment_cycles").delete().eq("subscriber_id", str(subscriber_id)).execute()

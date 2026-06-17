@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, getToken } from "../lib/api";
+import { useRouter } from "next/router";
+import { api, getToken, removeToken } from "../lib/api";
 import { showToast } from "../components/Toast";
-import { Users, Plus, X, Search, Zap, UserX, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
+import { Users, Plus, X, Search, Zap, UserX, Trash2, AlertTriangle, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 
 interface Subscriber {
   id: string;
@@ -35,6 +36,7 @@ function StatusBadge({ active }: { active: boolean }) {
 }
 
 export default function Subscribers() {
+  const router = useRouter();
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +44,15 @@ export default function Subscribers() {
   const [form, setForm] = useState({ plan_id: "", name: "", phone: "", email: "", whatsapp: "" });
   const [saving, setSaving] = useState(false);
   const [charging, setCharging] = useState<string | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [search, setSearch] = useState("");
 
   const load = () => {
     const token = getToken();
-    if (!token) return;
+    if (!token) { router.push("/login"); return; }
     setLoading(true);
     Promise.all([api("/api/subscribers", { token }), api("/api/plans", { token })])
       .then(([s, p]) => { setSubs(s); setPlans(p); })
@@ -75,12 +80,37 @@ export default function Subscribers() {
 
   const deactivate = async (id: string) => {
     try {
-      await api(`/api/subscribers/${id}`, { method: "DELETE", token: getToken()! });
+      await api(`/api/subscribers/${id}/soft`, { method: "DELETE", token: getToken()! });
       showToast("Subscriber deactivated", "success");
+      setConfirmDeactivate(null);
+      load();
+    } catch (e: any) {
+      showToast(e.message, "error");
+    }
+  };
+
+  const deleteSub = async (id: string) => {
+    try {
+      await api(`/api/subscribers/${id}`, { method: "DELETE", token: getToken()! });
+      showToast("Subscriber deleted permanently", "success");
       setConfirmDelete(null);
       load();
     } catch (e: any) {
       showToast(e.message, "error");
+    }
+  };
+
+  const clearAll = async () => {
+    setClearing(true);
+    try {
+      await api("/api/subscribers/all", { method: "DELETE", token: getToken()! });
+      showToast("All subscribers cleared", "success");
+      setConfirmClearAll(false);
+      load();
+    } catch (e: any) {
+      showToast(e.message, "error");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -108,7 +138,7 @@ export default function Subscribers() {
     <div className="p-4 sm:p-6 space-y-6">
 
       {/* Confirm Deactivate Modal */}
-      {confirmDelete && (
+      {confirmDeactivate && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
             <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
@@ -117,8 +147,44 @@ export default function Subscribers() {
             <h3 className="font-bold text-gray-900 text-lg mb-1">Deactivate Subscriber?</h3>
             <p className="text-gray-500 text-sm mb-6">This subscriber will stop receiving payment notifications.</p>
             <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDeactivate(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+              <button onClick={() => deactivate(confirmDeactivate)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition">Deactivate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Hard Delete Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Delete Subscriber?</h3>
+            <p className="text-gray-500 text-sm mb-6">This will permanently delete this subscriber and all their payment history.</p>
+            <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
-              <button onClick={() => deactivate(confirmDelete)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition">Deactivate</button>
+              <button onClick={() => deleteSub(confirmDelete)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 transition">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Clear All Modal */}
+      {confirmClearAll && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Clear All Subscribers?</h3>
+            <p className="text-gray-500 text-sm mb-6">This will permanently delete all subscribers and their payment history. This cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmClearAll(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+              <button onClick={clearAll} disabled={clearing} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition">
+                {clearing ? "Clearing..." : "Clear All"}
+              </button>
             </div>
           </div>
         </div>
@@ -130,15 +196,26 @@ export default function Subscribers() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Subscribers</h1>
           <p className="text-xs sm:text-sm text-gray-400 mt-0.5">{subs.length} total · {subs.filter(s => s.is_active).length} active</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-md whitespace-nowrap ${
-            showForm ? "bg-gray-100 text-gray-700" : "bg-[#8B5CF6] text-white hover:bg-purple-600 shadow-purple-200"
-          }`}
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? "Cancel" : "Add Subscriber"}
-        </button>
+        <div className="flex items-center gap-2">
+          {subs.length > 0 && (
+            <button
+              onClick={() => setConfirmClearAll(true)}
+              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear All
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-md whitespace-nowrap ${
+              showForm ? "bg-gray-100 text-gray-700" : "bg-[#8B5CF6] text-white hover:bg-purple-600 shadow-purple-200"
+            }`}
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? "Cancel" : "Add Subscriber"}
+          </button>
+        </div>
       </div>
 
       {/* Add Form */}
@@ -274,12 +351,18 @@ export default function Subscribers() {
                         )}
                         {sub.is_active && (
                           <button
-                            onClick={() => setConfirmDelete(sub.id)}
-                            className="text-[10px] sm:text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition whitespace-nowrap"
+                            onClick={() => setConfirmDeactivate(sub.id)}
+                            className="text-[10px] sm:text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 px-2 py-1.5 rounded-lg transition whitespace-nowrap"
                           >
                             Deactivate
                           </button>
                         )}
+                        <button
+                          onClick={() => setConfirmDelete(sub.id)}
+                          className="text-[10px] sm:text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition whitespace-nowrap"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
