@@ -87,16 +87,14 @@ export default function SalesHistory() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales History</h1>
-          <p className="text-sm text-gray-400 mt-0.5">View and manage all past Mobile Money checkout transactions</p>
-        </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales History</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mt-0.5">View and manage all past Mobile Money checkout transactions</p>
       </div>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2.5 w-72 shadow-sm">
-          <Search className="w-4 h-4 text-gray-400" />
+      <div className="w-full sm:w-72">
+        <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2.5 shadow-sm">
+          <Search className="w-4 h-4 text-gray-400 shrink-0" />
           <input
             className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-full"
             placeholder="Search by customer or receipt..."

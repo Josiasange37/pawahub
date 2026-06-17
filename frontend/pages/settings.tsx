@@ -81,12 +81,10 @@ export default function SettingsPage() {
   return (
     <>
       <Head><title>Fluxpay — Settings</title></Head>
-      <div className="p-6 space-y-6 bg-[#f5f5f7] min-h-full">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Manage your account</p>
-          </div>
+      <div className="p-4 sm:p-6 space-y-6 bg-[#f5f5f7] min-h-full">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Manage your account</p>
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">

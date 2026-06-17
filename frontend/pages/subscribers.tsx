@@ -124,14 +124,14 @@ export default function Subscribers() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subscribers</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{subs.length} total · {subs.filter(s => s.is_active).length} active</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Subscribers</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">{subs.length} total · {subs.filter(s => s.is_active).length} active</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-md ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-md whitespace-nowrap ${
             showForm ? "bg-gray-100 text-gray-700" : "bg-[#8B5CF6] text-white hover:bg-purple-600 shadow-purple-200"
           }`}
         >
@@ -187,10 +187,10 @@ export default function Subscribers() {
         {/* Table Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-900">All Subscribers</h2>
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-            <Search className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-48">
+            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
             <input
-              className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-40"
+              className="text-xs sm:text-sm bg-transparent outline-none placeholder:text-gray-400 flex-1 min-w-0"
               placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -216,70 +216,72 @@ export default function Subscribers() {
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
-                <th className="text-left px-6 py-3">Subscriber</th>
-                <th className="text-left px-4 py-3">Phone</th>
-                <th className="text-left px-4 py-3">Plan</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-6 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((sub) => (
-                <tr key={sub.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
-                  <td className="px-6 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {sub.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">{sub.name}</p>
-                        {sub.email && <p className="text-xs text-gray-400">{sub.email}</p>}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-500 font-mono text-xs">{sub.phone}</td>
-                  <td className="px-4 py-3.5">
-                    {planMap[sub.plan_id] ? (
-                      <span className="text-xs bg-purple-50 text-[#8B5CF6] font-semibold px-2.5 py-1 rounded-lg">
-                        {planMap[sub.plan_id].name}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5"><StatusBadge active={sub.is_active} /></td>
-                  <td className="px-6 py-3.5">
-                    <div className="flex items-center gap-2 justify-end">
-                      {sub.is_active && (
-                        <button
-                          onClick={() => chargeNow(sub.id)}
-                          disabled={charging === sub.id}
-                          className="flex items-center gap-1.5 text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition"
-                        >
-                          {charging === sub.id
-                            ? <span className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
-                            : <Zap className="w-3 h-3" />
-                          }
-                          {charging === sub.id ? "Charging…" : "Charge"}
-                        </button>
-                      )}
-                      {sub.is_active && (
-                        <button
-                          onClick={() => setConfirmDelete(sub.id)}
-                          className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition"
-                        >
-                          Deactivate
-                        </button>
-                      )}
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
+                  <th className="text-left px-2 sm:px-3 py-3">Subscriber</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden md:table-cell">Phone</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden lg:table-cell">Plan</th>
+                  <th className="text-left px-2 sm:px-3 py-3">Status</th>
+                  <th className="text-right px-3 sm:px-6 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((sub) => (
+                  <tr key={sub.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                    <td className="px-2 sm:px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shrink-0">
+                          {sub.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">{sub.name}</p>
+                          {sub.email && <p className="text-[10px] text-gray-400 truncate">{sub.email}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 sm:px-3 py-3 text-gray-500 font-mono text-xs hidden md:table-cell">{sub.phone}</td>
+                    <td className="px-2 sm:px-3 py-3 hidden lg:table-cell">
+                      {planMap[sub.plan_id] ? (
+                        <span className="text-xs bg-purple-50 text-[#8B5CF6] font-semibold px-2 py-0.5 rounded-lg">
+                          {planMap[sub.plan_id].name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-2 sm:px-3 py-3"><StatusBadge active={sub.is_active} /></td>
+                    <td className="px-3 sm:px-6 py-3">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        {sub.is_active && (
+                          <button
+                            onClick={() => chargeNow(sub.id)}
+                            disabled={charging === sub.id}
+                            className="flex items-center gap-1 text-[10px] sm:text-xs bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition whitespace-nowrap"
+                          >
+                            {charging === sub.id
+                              ? <span className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
+                              : <Zap className="w-3 h-3" />
+                            }
+                            {charging === sub.id ? "Charging…" : "Charge"}
+                          </button>
+                        )}
+                        {sub.is_active && (
+                          <button
+                            onClick={() => setConfirmDelete(sub.id)}
+                            className="text-[10px] sm:text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1.5 rounded-lg transition whitespace-nowrap"
+                          >
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

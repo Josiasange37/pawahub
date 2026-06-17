@@ -190,22 +190,22 @@ export default function POS() {
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchProduct.toLowerCase()) || (p.description || "").toLowerCase().includes(searchProduct.toLowerCase()));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Point of Sale</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Collect instant mobile payments in-person</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Point of Sale</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Collect instant mobile payments in-person</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Products selection panel */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-sm font-bold text-gray-900">Select Products</h2>
-            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2 w-64 shadow-sm">
-              <Search className="w-4 h-4 text-gray-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 className="text-xs sm:text-sm font-bold text-gray-900">Select Products</h2>
+            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2 w-full sm:w-64 shadow-sm">
+              <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <input
-                className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-full"
+                className="text-xs sm:text-sm bg-transparent outline-none placeholder:text-gray-400 flex-1 min-w-0"
                 placeholder="Filter products..."
                 value={searchProduct}
                 onChange={(e) => setSearchProduct(e.target.value)}
@@ -252,7 +252,7 @@ export default function POS() {
         </div>
 
         {/* Cart sidebar */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <h2 className="text-sm font-bold text-gray-950">Cart Items ({cart.length})</h2>
             {cart.length > 0 && (
@@ -272,7 +272,7 @@ export default function POS() {
             </div>
           ) : (
             <>
-              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[260px] sm:max-h-[380px] overflow-y-auto pr-1">
                 {cart.map((item) => {
                   const priceVal = item.customPrice !== undefined ? item.customPrice : item.product.price;
                   return (

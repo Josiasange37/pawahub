@@ -107,14 +107,14 @@ export default function Products() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage your shop inventory items and stock levels</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Products</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Manage your shop inventory items and stock levels</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingProduct(null); setForm({ name: "", description: "", price: "", stock: "0" }); }}
-          className="bg-[#8B5CF6] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-600 shadow-md shadow-purple-100 flex items-center gap-2"
+          className="bg-[#8B5CF6] text-white px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-purple-600 shadow-md shadow-purple-100 flex items-center gap-2 whitespace-nowrap"
         >
           <Plus className="w-4 h-4" />
           Add Product
@@ -157,12 +157,12 @@ export default function Products() {
       {/* Table Card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Table Header Controls */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-900">Your Inventory</h2>
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-64">
-            <Search className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
             <input
-              className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-full"
+              className="text-xs sm:text-sm bg-transparent outline-none placeholder:text-gray-400 flex-1 min-w-0"
               placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -188,47 +188,49 @@ export default function Products() {
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
-                <th className="text-left px-6 py-3.5">Item Name</th>
-                <th className="text-left px-4 py-3.5">Description</th>
-                <th className="text-left px-4 py-3.5">Unit Price</th>
-                <th className="text-left px-4 py-3.5">Stock Level</th>
-                <th className="text-right px-6 py-3.5">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((product) => (
-                <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
-                  <td className="px-6 py-4 font-semibold text-gray-800">{product.name}</td>
-                  <td className="px-4 py-4 text-gray-400">{product.description || "—"}</td>
-                  <td className="px-4 py-4 font-bold text-gray-900">{product.price.toLocaleString()} XAF</td>
-                  <td className="px-4 py-4">
-                    <StockBadge stock={product.stock} />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() => { setEditingProduct(product); setForm({ name: product.name, description: product.description || "", price: String(product.price), stock: String(product.stock || 0) }); setShowForm(true); }}
-                        className="p-2 text-gray-400 hover:text-[#8B5CF6] hover:bg-purple-50 rounded-lg transition"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(product.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
+                  <th className="text-left px-2 sm:px-3 py-3">Item Name</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden md:table-cell">Description</th>
+                  <th className="text-left px-2 sm:px-3 py-3">Unit Price</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden lg:table-cell">Stock Level</th>
+                  <th className="text-right px-3 sm:px-6 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((product) => (
+                  <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                    <td className="px-2 sm:px-3 py-3.5 text-xs sm:text-sm font-semibold text-gray-800">{product.name}</td>
+                    <td className="px-2 sm:px-3 py-3.5 text-gray-400 text-xs hidden md:table-cell">{product.description || "—"}</td>
+                    <td className="px-2 sm:px-3 py-3.5 text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">{product.price.toLocaleString()} XAF</td>
+                    <td className="px-2 sm:px-3 py-3.5 hidden lg:table-cell">
+                      <StockBadge stock={product.stock} />
+                    </td>
+                    <td className="px-3 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => { setEditingProduct(product); setForm({ name: product.name, description: product.description || "", price: String(product.price), stock: String(product.stock || 0) }); setShowForm(true); }}
+                          className="p-1.5 text-gray-400 hover:text-[#8B5CF6] hover:bg-purple-50 rounded-lg transition"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(product.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

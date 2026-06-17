@@ -284,7 +284,7 @@ export default function Onboarding() {
             ref={cardRef}
             className="w-full max-w-[480px] bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 overflow-hidden"
           >
-            <div className="p-8 md:p-10 relative z-10 min-h-[380px] flex flex-col justify-between">
+            <div className="p-5 sm:p-8 md:p-10 relative z-10 min-h-[380px] flex flex-col justify-between">
               
               <div ref={stepContentRef} className="w-full flex-1 flex flex-col justify-center">
                 {/* Step 1: Business Type */}
@@ -406,8 +406,8 @@ export default function Onboarding() {
                         </div>
                       ) : botStatus?.qr_data_url ? (
                         <div className="text-center py-2 space-y-4">
-                          <div className="bg-white p-3 rounded-2xl inline-block border border-gray-100 shadow-sm">
-                            <img src={botStatus.qr_data_url} alt="WhatsApp QR Code" className="w-40 h-40 rounded-xl" />
+                          <div className="bg-white p-2 sm:p-3 rounded-2xl inline-block border border-gray-100 shadow-sm">
+                            <img src={botStatus.qr_data_url} alt="WhatsApp QR Code" className="w-32 sm:w-40 h-32 sm:h-40 rounded-xl" />
                           </div>
                           <p className="text-gray-400 text-[11px] font-semibold max-w-[280px] mx-auto leading-relaxed">
                             {t.qrInstructions}

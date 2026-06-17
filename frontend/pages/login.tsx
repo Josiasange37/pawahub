@@ -304,7 +304,7 @@ export default function AuthPage() {
       <div className="min-h-screen flex w-full bg-white font-sans text-black overflow-hidden">
         
         {/* Left Side - Auth Form */}
-        <div className="w-full lg:w-1/2 flex flex-col relative z-10 px-8 py-8 sm:px-16 lg:px-24">
+        <div className="w-full lg:w-1/2 flex flex-col relative z-10 px-5 sm:px-8 md:px-16 lg:px-24 py-6 sm:py-8">
           
           {/* Header Top Nav */}
           <div className="flex justify-between items-center w-full mb-auto">

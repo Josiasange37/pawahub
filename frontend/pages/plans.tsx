@@ -61,16 +61,16 @@ export default function Plans() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subscription Plans</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage your recurring payment plans</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Subscription Plans</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Manage your recurring payment plans</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition shadow-md ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-md whitespace-nowrap ${
             showForm ? "bg-gray-100 text-gray-700" : "bg-[#8B5CF6] text-white hover:bg-purple-600 shadow-purple-200"
           }`}
         >
@@ -114,10 +114,10 @@ export default function Plans() {
       )}
 
       {/* Search */}
-      <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-2.5 w-72 shadow-sm">
-        <Search className="w-4 h-4 text-gray-400" />
+      <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-2.5 w-full sm:w-72 shadow-sm">
+        <Search className="w-4 h-4 text-gray-400 shrink-0" />
         <input
-          className="text-sm bg-transparent outline-none placeholder:text-gray-400 flex-1"
+          className="text-sm bg-transparent outline-none placeholder:text-gray-400 flex-1 min-w-0"
           placeholder="Search plans…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -63,23 +63,23 @@ export default function Transactions() {
   const stats = SUMMARY_STATS(txs);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full">
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-        <p className="text-sm text-gray-400 mt-0.5">All billing activity and payment history</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transactions</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mt-0.5">All billing activity and payment history</p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((s, i) => (
-          <div key={s.label} className={`rounded-2xl p-5 shadow-sm ${s.bg}`}>
-            <div className="flex items-center justify-between mb-3">
-              <p className={`text-xs font-semibold ${i === 0 ? "text-white/70" : "text-gray-400"}`}>{s.label}</p>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.iconBg}`}>{s.icon}</div>
+          <div key={s.label} className={`rounded-2xl p-4 sm:p-5 shadow-sm ${s.bg}`}>
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <p className={`text-[10px] sm:text-xs font-semibold ${i === 0 ? "text-white/70" : "text-gray-400"}`}>{s.label}</p>
+              <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center ${s.iconBg}`}>{s.icon}</div>
             </div>
-            <p className={`text-2xl font-bold tracking-tight ${i === 0 ? "text-white" : "text-gray-900"}`}>{s.value}</p>
+            <p className={`text-lg sm:text-2xl font-bold tracking-tight ${i === 0 ? "text-white" : "text-gray-900"}`}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -87,15 +87,15 @@ export default function Transactions() {
       {/* Table Card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-wrap sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-900">Transaction History</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Status filter */}
             <div className="relative">
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="appearance-none text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pr-8 outline-none focus:border-[#8B5CF6] font-medium text-gray-600 cursor-pointer"
+                className="appearance-none text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 pr-8 outline-none focus:border-[#8B5CF6] font-medium text-gray-600 cursor-pointer"
               >
                 <option value="all">All Status</option>
                 <option value="completed">Completed</option>
@@ -107,9 +107,9 @@ export default function Transactions() {
             </div>
             {/* Search */}
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-              <Search className="w-4 h-4 text-gray-400" />
+              <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <input
-                className="text-sm bg-transparent outline-none placeholder:text-gray-400 w-36"
+                className="text-xs sm:text-sm bg-transparent outline-none placeholder:text-gray-400 w-24 sm:w-36 min-w-0"
                 placeholder="Search…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -133,48 +133,44 @@ export default function Transactions() {
             </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
-                <th className="text-left px-6 py-3">Amount</th>
-                <th className="text-left px-4 py-3">Provider</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">pawaPay Status</th>
-                <th className="text-left px-4 py-3">Date</th>
-                <th className="text-left px-6 py-3">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((tx) => (
-                <tr key={tx.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition">
-                  <td className="px-6 py-3.5 font-bold text-gray-900">
-                    {tx.amount.toLocaleString()} <span className="text-gray-400 font-normal text-xs">XAF</span>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {tx.provider ? (
-                      <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2.5 py-1 rounded-lg">{tx.provider}</span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5"><StatusBadge status={tx.status} /></td>
-                  <td className="px-4 py-3.5 text-gray-500 text-xs">{tx.pawapay_status || "—"}</td>
-                  <td className="px-4 py-3.5 text-gray-400 text-xs whitespace-nowrap">
-                    {new Date(tx.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                  </td>
-                  <td className="px-6 py-3.5">
-                    {tx.error_message ? (
-                      <span className="text-xs text-red-400 truncate max-w-[180px] block" title={tx.error_message}>
-                        {tx.error_message}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 font-semibold border-b border-gray-100">
+                  <th className="text-left px-2 sm:px-3 py-3 hidden sm:table-cell">Amount</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden md:table-cell">Provider</th>
+                  <th className="text-left px-2 sm:px-3 py-3">Status</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden lg:table-cell">pawaPay Status</th>
+                  <th className="text-left px-2 sm:px-3 py-3 hidden md:table-cell">Date</th>
+                  <th className="text-left px-3 sm:px-6 py-3">Note</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((tx) => (
+                  <tr key={tx.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition">
+                    <td className="px-2 sm:px-3 py-3 font-bold text-gray-900 hidden sm:table-cell">
+                      {tx.amount.toLocaleString()} <span className="text-gray-400 font-normal text-xs">XAF</span>
+                    </td>
+                    <td className="px-2 sm:px-3 py-3 hidden md:table-cell">
+                      {tx.provider ? (
+                        <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2.5 py-1 rounded-lg">{tx.provider}</span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-2 sm:px-3 py-3"><StatusBadge status={tx.status} /></td>
+                    <td className="px-2 sm:px-3 py-3 text-gray-500 text-xs hidden lg:table-cell">{tx.pawapay_status || "—"}</td>
+                    <td className="px-2 sm:px-3 py-3 text-gray-400 text-xs hidden md:table-cell whitespace-nowrap">
+                      {new Date(tx.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 truncate max-w-[180px] block">
+                      {tx.error_message || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* Footer */}

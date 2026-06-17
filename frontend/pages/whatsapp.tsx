@@ -80,16 +80,16 @@ export default function WhatsAppPage() {
   return (
     <>
       <Head><title>Fluxpay — WhatsApp</title></Head>
-      <div className="p-6 space-y-6 bg-[#f5f5f7] min-h-full">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 space-y-6 bg-[#f5f5f7] min-h-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">WhatsApp</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Manage your WhatsApp connection</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">WhatsApp</h1>
+            <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Manage your WhatsApp connection</p>
           </div>
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition"
+            className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition self-start"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -136,8 +136,8 @@ export default function WhatsAppPage() {
             ) : botStatus?.qr_data_url ? (
               <div className="space-y-4">
                 <p className="text-sm font-bold text-gray-800">Scan to Connect</p>
-                <div className="bg-white p-3 rounded-2xl inline-block border border-gray-100 shadow-sm">
-                  <img src={botStatus.qr_data_url} alt="WhatsApp QR Code" className="w-44 h-44 rounded-xl" />
+                <div className="bg-white p-2 sm:p-3 rounded-2xl inline-block border border-gray-100 shadow-sm">
+                  <img src={botStatus.qr_data_url} alt="WhatsApp QR Code" className="w-36 sm:w-44 h-36 sm:h-44 rounded-xl" />
                 </div>
                 <p className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
                   Open WhatsApp on your phone → Settings → Linked Devices → Link a Device
