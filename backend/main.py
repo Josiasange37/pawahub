@@ -12,20 +12,20 @@ scheduler = AsyncIOScheduler()
 
 
 def run_migrations():
+    try:
+        import psycopg2
+    except ImportError:
+        return
     from config import settings
     from urllib.parse import urlparse
-    import psycopg2
     parsed = urlparse(settings.supabase_url)
     db_host = parsed.hostname
-    db_name = parsed.path.lstrip("/") if parsed.path else "postgres"
+    db_name = (parsed.path.lstrip("/") if parsed.path else "postgres").rsplit("?", 1)[0]
     db_user = "postgres"
     try:
         conn = psycopg2.connect(
-            host=db_host,
-            port=5432,
-            dbname=db_name,
-            user=db_user,
-            password=settings.supabase_db_password,
+            host=db_host, port=5432, dbname=db_name,
+            user=db_user, password=settings.supabase_db_password,
             connect_timeout=5,
         )
         cur = conn.cursor()
