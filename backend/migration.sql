@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS subscribers (
     plan_id UUID REFERENCES subscription_plans(id) NOT NULL,
     name TEXT NOT NULL,
     phone TEXT NOT NULL,
+    email TEXT DEFAULT '',
+    whatsapp TEXT DEFAULT '',
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -131,8 +133,6 @@ CREATE INDEX IF NOT EXISTS idx_pos_sale_items_sale_id ON pos_sale_items(sale_id)
 
 ALTER TABLE smes ADD COLUMN IF NOT EXISTS business_type TEXT DEFAULT 'solo';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0;
-ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
-ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS whatsapp TEXT DEFAULT '';
 
 -- Enable RLS on user_preferences; backend uses service_role (bypasses RLS)
 -- so only anon/authenticated direct API access is blocked, not server-side queries.
