@@ -233,20 +233,22 @@ export default function Subscribers() {
         </div>
         <div className="flex items-center gap-2">
           {subs.length > 0 && (
-            <button
-              onClick={() => setConfirmClearAll(true)}
-              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap"
-            >
-              <Trash2 className="w-4 h-4" />
-              Clear Subs
-            </button>
-            <button
-              onClick={() => setConfirmReset(true)}
-              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              Reset All
-            </button>
+            <>
+              <button
+                onClick={() => setConfirmClearAll(true)}
+                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear Subs
+              </button>
+              <button
+                onClick={() => setConfirmReset(true)}
+                className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Reset All
+              </button>
+            </>
           )}
           <button
             onClick={() => setShowForm(!showForm)}
