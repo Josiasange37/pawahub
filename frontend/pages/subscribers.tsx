@@ -47,7 +47,9 @@ export default function Subscribers() {
   const [confirmDeactivate, setConfirmDeactivate] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [search, setSearch] = useState("");
 
   const load = () => {
@@ -114,6 +116,20 @@ export default function Subscribers() {
     }
   };
 
+  const resetAll = async () => {
+    setResetting(true);
+    try {
+      await api("/api/subscribers/reset", { method: "DELETE", token: getToken()! });
+      showToast("All data cleared. Fresh start ready!", "success");
+      setConfirmReset(false);
+      load();
+    } catch (e: any) {
+      showToast(e.message, "error");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const chargeNow = async (id: string) => {
     setCharging(id);
     try {
@@ -171,6 +187,25 @@ export default function Subscribers() {
         </div>
       )}
 
+      {/* Confirm Reset All Data Modal */}
+      {confirmReset && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Reset All Data?</h3>
+            <p className="text-gray-500 text-sm mb-6">This will permanently delete ALL your data — subscribers, plans, products, sales, transactions. Your account stays but everything else is wiped. Cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmReset(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+              <button onClick={resetAll} disabled={resetting} className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition">
+                {resetting ? "Resetting..." : "Yes, Reset Everything"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Clear All Modal */}
       {confirmClearAll && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -203,7 +238,14 @@ export default function Subscribers() {
               className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-200 text-red-500 hover:bg-red-50 whitespace-nowrap"
             >
               <Trash2 className="w-4 h-4" />
-              Clear All
+              Clear Subs
+            </button>
+            <button
+              onClick={() => setConfirmReset(true)}
+              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition border border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Reset All
             </button>
           )}
           <button

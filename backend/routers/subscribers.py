@@ -73,6 +73,18 @@ async def clear_all_subscribers(sme: dict = Depends(get_current_sme), db: Client
     return {"message": "All subscribers and related data cleared"}
 
 
+@router.delete("/reset")
+async def reset_all_sme_data(sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
+    sme_id = sme["id"]
+    tables = ["transactions", "payment_cycles", "user_preferences", "pos_sale_items", "pos_sales", "products", "subscribers", "subscription_plans"]
+    for table in tables:
+        try:
+            db.table(table).delete().eq("sme_id", sme_id).execute()
+        except Exception:
+            pass
+    return {"message": "All data cleared. Your account is ready for a fresh start."}
+
+
 @router.delete("/{subscriber_id}")
 async def delete_subscriber(subscriber_id: UUID, sme: dict = Depends(get_current_sme), db: Client = Depends(get_db)):
     db.table("payment_cycles").delete().eq("subscriber_id", str(subscriber_id)).execute()
